@@ -18,5 +18,5 @@ export async function getEventController(
   const getEvent = makeGetEventEventUseCase();
   const { event } = await getEvent.execute({ id });
 
-  return reply.status(201).send({ event });
+  return reply.status(200).send({ event });
 }

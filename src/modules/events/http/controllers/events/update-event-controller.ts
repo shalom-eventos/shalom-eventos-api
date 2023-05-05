@@ -36,5 +36,5 @@ export async function updateEventController(
     end_date,
   });
 
-  return reply.status(201).send({ event });
+  return reply.status(200).send({ event });
 }
