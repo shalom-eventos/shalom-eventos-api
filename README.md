@@ -39,10 +39,24 @@ Shalom Eventos API.
 ### RFs (Requisitos funcionais)
 
 - [x] Deve ser possível cadastrar um endereço para o evento;
-- [x] Deve ser possível editar um endereço do o evento;
-- [x] Deve ser possível mostrar um endereço do o evento;
+- [x] Deve ser possível editar um endereço do evento;
+- [x] Deve ser possível mostrar um endereço do evento;
 
 ### RNs (Regras de negócio)
 
 - [x] Somente administradores devem poder cadastrar e editar endereços;
 - [x] Cada evento só poderá ter um endereço;
+
+
+## Módulo de Lotes (ingressos do evento)
+
+### RFs (Requisitos funcionais)
+
+- [x] Deve ser possível cadastrar um ingressos para o evento;
+- [x] Deve ser possível editar um ingressos do evento;
+- [x] Deve ser possível listas os ingressos de um evento;
+
+### RNs (Regras de negócio)
+
+- [x] Somente administradores devem poder cadastrar e editar lotes de ingressos;
+- [x] Ingressos não devem poder ser editados depois de do evento expirado;
