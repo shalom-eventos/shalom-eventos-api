@@ -10,31 +10,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMINISTRATOR
+  PARTICIPANT
+}
+
 model User {
   id            String   @id @default(uuid())
   name          String
   email         String   @unique
   password_hash String
-  role_id       String
+  role          Role     @default(PARTICIPANT)
   created_at    DateTime @default(now())
   updated_at    DateTime @default(now()) @updatedAt
 
-  role          Role                @relation(fields: [role_id], references: [id])
   registrations EventRegistration[]
 
   @@map("users")
-}
-
-model Role {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  created_at  DateTime @default(now())
-  updated_at  DateTime @default(now()) @updatedAt
-
-  users User[]
-
-  @@map("roles")
 }
 
 model Event {
