@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
 import { makeAuthenticateUseCase } from '@modules/users/use-cases/factories/make-authenticate-use-case';
+import { excludeFields } from '@/shared/utils/exclude-fields';
 
 export async function authenticate(
   request: FastifyRequest,
@@ -41,6 +42,7 @@ export async function authenticate(
     })
     .status(200)
     .send({
+      user: excludeFields(user, ['password_hash']),
       token,
     });
 }
