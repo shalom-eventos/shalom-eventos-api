@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role_id       String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now()) @updatedAt
+
+  role          Role                @relation(fields: [role_id], references: [id])
+  registrations EventRegistration[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now()) @updatedAt
+
+  users User[]
+
+  @@map("roles")
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  start_date  DateTime
+  end_date    DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @default(now()) @updatedAt
+
+  addresses     AddressesOnEvents[]
+  tickets       EventTicket[]
+  registrations EventRegistration[]
+
+  @@map("events")
+}
+
+model Address {
+  id            String   @id @default(uuid())
+  street        String
+  street_number String
+  complement    String?
+  zip_code      String
+  district      String
+  city          String
+  state         String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @default(now()) @updatedAt
+
+  events AddressesOnEvents[]
+
+  @@map("addresses")
+}
+
+model AddressesOnEvents {
+  event    Event  @relation(fields: [event_id], references: [id])
+  event_id String
+
+  address    Address @relation(fields: [address_id], references: [id])
+  address_id String
+
+  @@id([event_id, address_id])
+  @@map("addresses_events")
+}
+
+model EventTicket {
+  id         String    @id @default(uuid())
+  event_id   String
+  title      String
+  price      Decimal
+  expires_in DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now()) @updatedAt
+
+  event    Event      @relation(fields: [event_id], references: [id])
+  Payments Payments[]
+
+  @@map("event_tickets")
+}
+
+model EventRegistration {
+  id                  String   @id @default(uuid())
+  user_id             String
+  event_id            String
+  full_name           String
+  age                 Int
+  document_number     String
+  document_type       String
+  pcd_description     String?
+  allergy_description String?
+  transportation_mode String
+  mother_name         String?
+  father_name         String?
+  accepted_the_terms  Boolean
+  is_approved         Boolean  @default(false)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @default(now()) @updatedAt
+
+  event    Event      @relation(fields: [event_id], references: [id])
+  user     User       @relation(fields: [user_id], references: [id])
+  Payments Payments[]
+
+  @@map("event_registrations")
+}
+
+model Payments {
+  id                    String   @id @default(uuid())
+  event_registration_id String
+  event_ticket_id       String
+  payment_method        String
+  price                 Decimal
+  file                  String?
+  status                String
+  created_at            DateTime @default(now())
+  updated_at            DateTime @default(now()) @updatedAt
+
+  event_registration EventRegistration @relation(fields: [event_registration_id], references: [id])
+  event_ticket       EventTicket       @relation(fields: [event_ticket_id], references: [id])
+
+  @@map("payments")
+}
