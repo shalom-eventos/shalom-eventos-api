@@ -1,4 +1,6 @@
 import { EventTicket } from '@prisma/client';
+
+import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { TicketsRepository } from '../repositories/tickets-repository';
 import { ResourceNotFoundError } from './errors';
 
@@ -14,7 +16,10 @@ interface IResponse {
 }
 
 export class CreateTicketUseCase {
-  constructor(private ticketsRepository: TicketsRepository) {}
+  constructor(
+    private ticketsRepository: TicketsRepository,
+    private eventsRepository: EventsRepository
+  ) {}
 
   async execute({
     event_id,
@@ -22,6 +27,9 @@ export class CreateTicketUseCase {
     price,
     expires_in,
   }: IRequest): Promise<IResponse> {
+    const eventExists = await this.eventsRepository.findById(event_id);
+    if (!eventExists) throw new ResourceNotFoundError();
+
     const ticket = await this.ticketsRepository.create({
       event_id,
       title,
