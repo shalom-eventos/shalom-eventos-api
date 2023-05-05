@@ -6,6 +6,7 @@ import { profileRoutes } from '@/modules/users/http/routes/profile-routes';
 import { eventsRoutes } from '@/modules/events/http/routes/events-routes';
 import { tokenRoutes } from '@/modules/users/http/routes/token-routes';
 import { addressRoutes } from '@/modules/addresses/http/routes/address-routes';
+import { ticketsRoutes } from '@/modules/event-tickets/http/routes/tickets-routes';
 
 export async function appRoutes(app: FastifyInstance) {
   app.register(userRoutes);
@@ -14,4 +15,5 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(eventsRoutes);
   app.register(tokenRoutes);
   app.register(addressRoutes);
+  app.register(ticketsRoutes);
 }
