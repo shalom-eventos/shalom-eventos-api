@@ -1,4 +1,4 @@
-import { AppError } from '@/shared/errors/AppError';
+import { AppError } from '@/shared/errors/app-error';
 
 export class InvalidDateIntervalError extends AppError {
   constructor() {

@@ -4,7 +4,7 @@ import fastifyCookie from '@fastify/cookie';
 
 import { env } from '../env';
 import { appRoutes } from './http/routes';
-import { errorHandler } from '../errors/errorHandler';
+import { errorHandler } from '../errors/error-handler';
 
 export const app = fastify();
 

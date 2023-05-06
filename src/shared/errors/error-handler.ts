@@ -1,6 +1,6 @@
 import { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError } from 'zod';
-import { AppError } from './AppError';
+import { AppError } from './app-error';
 import { env } from '../env';
 
 export function errorHandler(
