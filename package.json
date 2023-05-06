@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/shared/infra/server.ts",
     "build": "tsup src --out-dir build",
-    "start": "node build/server.js",
+    "start": "node build/shared/infra/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
