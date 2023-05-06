@@ -60,3 +60,19 @@ Shalom Eventos API.
 
 - [x] Somente administradores devem poder cadastrar e editar lotes de ingressos;
 - [x] Ingressos não devem poder ser editados depois de do evento expirado;
+
+
+## Módulo de Inscrições no evento
+
+### RFs (Requisitos funcionais)
+
+- [x] Deve ser possível cadastrar uma nova inscrição no evento;
+- [x] Deve ser possível listas as inscrições de um evento;
+- [x] Usuário deve poder listar suas inscrições;
+- [x] Deve ser possível validar uma inscrição;
+
+### RNs (Regras de negócio)
+
+- [x] Somente administradores devem poder validar inscrição;
+- [x] Somente administradores devem poder listar as inscrições dos eventos;
+- [x] Somente participantes podem se inscrever nos eventos;
