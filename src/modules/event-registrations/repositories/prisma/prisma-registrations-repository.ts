@@ -12,6 +12,14 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
     return registration;
   }
 
+  async findByIdAndUser(id: string, user_id: string) {
+    const registration = await prisma.eventRegistration.findFirst({
+      where: { id, user_id },
+    });
+
+    return registration;
+  }
+
   async findManyByEvent(event_id: string) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
