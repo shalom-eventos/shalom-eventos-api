@@ -1,0 +1,252 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// src/modules/payments/http/controllers/create-payment-controller.ts
+var create_payment_controller_exports = {};
+__export(create_payment_controller_exports, {
+  createPaymentController: () => createPaymentController
+});
+module.exports = __toCommonJS(create_payment_controller_exports);
+var import_zod2 = require("zod");
+
+// src/shared/env/index.ts
+var import_config = require("dotenv/config");
+var import_zod = require("zod");
+var envSchema = import_zod.z.object({
+  NODE_ENV: import_zod.z.enum(["dev", "test", "production"]).default("dev"),
+  JWT_SECRET: import_zod.z.string(),
+  PORT: import_zod.z.coerce.number().default(3333)
+});
+var _env = envSchema.safeParse(process.env);
+if (_env.success === false) {
+  console.error("\u274C Invalid environments variables", _env.error.format());
+  throw new Error("Invalid environment variables");
+}
+var env = _env.data;
+
+// src/shared/lib/prisma.ts
+var import_client = require("@prisma/client");
+var prisma = new import_client.PrismaClient({
+  log: env.NODE_ENV === "dev" ? ["query"] : []
+});
+
+// src/modules/event-tickets/repositories/prisma/prisma-addresses-repository.ts
+var PrismaTicketsRepository = class {
+  async findById(id) {
+    const ticket = await prisma.eventTicket.findUnique({
+      where: { id }
+    });
+    return ticket;
+  }
+  async findByIdIfEventNotExpired(id) {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        id,
+        event: {
+          end_date: {
+            gt: /* @__PURE__ */ new Date()
+          }
+        }
+      }
+    });
+    return ticket;
+  }
+  async findManyByEvent(event_id) {
+    const ticket = await prisma.eventTicket.findMany({
+      where: { event_id }
+    });
+    return ticket;
+  }
+  async create(data) {
+    const ticket = await prisma.eventTicket.create({
+      data
+    });
+    return ticket;
+  }
+  async save(data) {
+    const ticket = await prisma.eventTicket.update({
+      where: { id: data.id },
+      data
+    });
+    return ticket;
+  }
+};
+
+// src/modules/event-registrations/repositories/prisma/prisma-registrations-repository.ts
+var PrismaRegistrationsRepository = class {
+  async findById(id) {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id }
+    });
+    return registration;
+  }
+  async findByIdAndUser(id, user_id) {
+    const registration = await prisma.eventRegistration.findFirst({
+      where: { id, user_id }
+    });
+    return registration;
+  }
+  async findManyByEvent(event_id) {
+    const registrations = await prisma.eventRegistration.findMany({
+      where: { event_id }
+    });
+    return registrations;
+  }
+  async findManyByUser(user_id) {
+    const registrations = await prisma.eventRegistration.findMany({
+      where: { user_id }
+    });
+    return registrations;
+  }
+  async create(data) {
+    const registration = await prisma.eventRegistration.create({
+      data
+    });
+    return registration;
+  }
+  async save(data) {
+    const registration = await prisma.eventRegistration.update({
+      where: { id: data.id },
+      data
+    });
+    return registration;
+  }
+};
+
+// src/modules/payments/repositories/prisma/prisma-payments-repository.ts
+var PrismaPaymentsRepository = class {
+  async findById(id) {
+    const payment = await prisma.payment.findUnique({
+      where: { id }
+    });
+    return payment;
+  }
+  async create(data) {
+    const payment = await prisma.payment.create({
+      data
+    });
+    return payment;
+  }
+  async save(data) {
+    const payment = await prisma.payment.update({
+      where: { id: data.id },
+      data
+    });
+    return payment;
+  }
+};
+
+// src/modules/payments/use-cases/create-payment-use-case.ts
+var import_runtime = require("@prisma/client/runtime");
+
+// src/shared/errors/app-error.ts
+var AppError = class {
+  constructor(message, statusCode = 400) {
+    this.message = message;
+    this.statusCode = statusCode;
+  }
+};
+
+// src/modules/payments/use-cases/errors/resource-not-found-error.ts
+var ResourceNotFoundError = class extends AppError {
+  constructor() {
+    super("Resource not found.", 404);
+  }
+};
+
+// src/modules/payments/use-cases/create-payment-use-case.ts
+var CreatePaymentUseCase = class {
+  constructor(paymentsRepository, registrationsRepository, ticketsRepository) {
+    this.paymentsRepository = paymentsRepository;
+    this.registrationsRepository = registrationsRepository;
+    this.ticketsRepository = ticketsRepository;
+  }
+  async execute({
+    user_id,
+    event_registration_id,
+    event_ticket_id,
+    payment_method,
+    price,
+    file
+  }) {
+    const registration = await this.registrationsRepository.findByIdAndUser(
+      event_registration_id,
+      user_id
+    );
+    if (!registration)
+      throw new ResourceNotFoundError();
+    const ticket = await this.ticketsRepository.findById(event_ticket_id);
+    if (!ticket)
+      throw new ResourceNotFoundError();
+    const payment = await this.paymentsRepository.create({
+      event_registration_id,
+      event_ticket_id,
+      payment_method,
+      price: new import_runtime.Decimal(price),
+      file,
+      status: "sent"
+    });
+    return { payment };
+  }
+};
+
+// src/modules/payments/use-cases/factories/make-create-payment-use-case.ts
+function makeCreatePaymentUseCase() {
+  const paymentsRepository = new PrismaPaymentsRepository();
+  const registrationsRepository = new PrismaRegistrationsRepository();
+  const ticketsRepository = new PrismaTicketsRepository();
+  const useCase = new CreatePaymentUseCase(
+    paymentsRepository,
+    registrationsRepository,
+    ticketsRepository
+  );
+  return useCase;
+}
+
+// src/modules/payments/http/controllers/create-payment-controller.ts
+async function createPaymentController(request, reply) {
+  const paramsSchema = import_zod2.z.object({
+    event_registration_id: import_zod2.z.string().uuid()
+  }).strict();
+  const bodySchema = import_zod2.z.object({
+    event_ticket_id: import_zod2.z.string().uuid(),
+    payment_method: import_zod2.z.string(),
+    price: import_zod2.z.coerce.number().positive()
+  }).strict();
+  const user_id = request.user.sub;
+  const file = request.file;
+  const { event_registration_id } = paramsSchema.parse(request.params);
+  const { event_ticket_id, payment_method, price } = bodySchema.parse(
+    request.body
+  );
+  const createPayment = makeCreatePaymentUseCase();
+  const { payment } = await createPayment.execute({
+    user_id,
+    event_registration_id,
+    event_ticket_id,
+    payment_method,
+    price,
+    file: String(file.filename)
+  });
+  return reply.status(200).send({ payment });
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createPaymentController
+});
