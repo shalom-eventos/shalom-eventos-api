@@ -11,6 +11,12 @@ export class PrismaEventsRepository implements EventsRepository {
     return event;
   }
 
+  async findMany() {
+    const events = await prisma.event.findMany({});
+
+    return events;
+  }
+
   async findByIdWithRelations(id: string) {
     const event = await prisma.event.findUnique({
       where: { id },
