@@ -71,8 +71,8 @@ model EventTicket {
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now()) @updatedAt
 
-  event    Event      @relation(fields: [event_id], references: [id])
-  payments Payments[]
+  event    Event     @relation(fields: [event_id], references: [id])
+  payments Payment[]
 
   @@map("event_tickets")
 }
@@ -99,14 +99,14 @@ model EventRegistration {
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now()) @updatedAt
 
-  event   Event     @relation(fields: [event_id], references: [id])
-  user    User      @relation(fields: [user_id], references: [id])
-  payment Payments?
+  event   Event    @relation(fields: [event_id], references: [id])
+  user    User     @relation(fields: [user_id], references: [id])
+  payment Payment?
 
   @@map("event_registrations")
 }
 
-model Payments {
+model Payment {
   id                    String   @id @default(uuid())
   event_registration_id String   @unique
   event_ticket_id       String
