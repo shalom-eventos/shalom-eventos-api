@@ -28,6 +28,7 @@ var import_jwt = __toESM(require("@fastify/jwt"));
 var import_cookie = __toESM(require("@fastify/cookie"));
 var import_fastify_multer3 = __toESM(require("fastify-multer"));
 var import_static = __toESM(require("@fastify/static"));
+var import_cors = __toESM(require("@fastify/cors"));
 
 // src/config/upload.ts
 var import_path = __toESM(require("path"));
@@ -579,7 +580,7 @@ async function listEventsController(request, reply) {
 // src/modules/events/http/routes/events-routes.ts
 async function eventsRoutes(app2) {
   app2.get("/events/:id", getEventController);
-  app2.get("/events/", listEventsController);
+  app2.get("/events", listEventsController);
   const middlewares = {
     onRequest: [verifyJWT, verifyUserRole("ADMINISTRATOR")]
   };
@@ -1603,6 +1604,16 @@ var app = (0, import_fastify.default)();
 app.register(import_jwt.default, auth_default.jwt);
 app.register(import_cookie.default);
 app.register(import_fastify_multer3.default.contentParser);
+app.register(import_cors.default, {
+  // Permitir origens específicas (ou use "*" para permitir qualquer origem)
+  origin: "*",
+  // Permitir métodos HTTP específicos
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  // Permitir cabeçalhos HTTP personalizados
+  allowedHeaders: ["Authorization", "Content-Type"],
+  // Permitir o envio de credenciais (cookies)
+  credentials: true
+});
 app.register(import_static.default, {
   root: upload_default.tmpFolder,
   prefix: "/files/"

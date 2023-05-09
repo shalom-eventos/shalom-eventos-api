@@ -542,7 +542,7 @@ async function listEventsController(request, reply) {
 // src/modules/events/http/routes/events-routes.ts
 async function eventsRoutes(app) {
   app.get("/events/:id", getEventController);
-  app.get("/events/", listEventsController);
+  app.get("/events", listEventsController);
   const middlewares = {
     onRequest: [verifyJWT, verifyUserRole("ADMINISTRATOR")]
   };
