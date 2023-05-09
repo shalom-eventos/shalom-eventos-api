@@ -9,7 +9,7 @@ import { listEventsController } from '../controllers/events/list-events-controll
 
 export async function eventsRoutes(app: FastifyInstance) {
   app.get('/events/:id', getEventController);
-  app.get('/events/', listEventsController);
+  app.get('/events', listEventsController);
 
   const middlewares = {
     onRequest: [verifyJWT, verifyUserRole('ADMINISTRATOR')],
