@@ -3,6 +3,7 @@ import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import fastifyMulter from 'fastify-multer';
 import fastifyStatic from '@fastify/static';
+import cors from '@fastify/cors';
 
 import uploadConfig from '@/config/upload';
 import auth from '@/config/auth';
@@ -14,6 +15,16 @@ export const app = fastify();
 app.register(fastifyJwt, auth.jwt);
 app.register(fastifyCookie);
 app.register(fastifyMulter.contentParser);
+app.register(cors, {
+  // Permitir origens específicas (ou use "*" para permitir qualquer origem)
+  origin: '*',
+  // Permitir métodos HTTP específicos
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  // Permitir cabeçalhos HTTP personalizados
+  allowedHeaders: ['Authorization', 'Content-Type'],
+  // Permitir o envio de credenciais (cookies)
+  credentials: true,
+});
 
 app.register(fastifyStatic, {
   root: uploadConfig.tmpFolder,
