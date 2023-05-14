@@ -9,7 +9,6 @@ import { ResourceNotFoundError } from './errors';
 interface IRequest {
   user_id: string;
   event_registration_id: string;
-  event_ticket_id: string;
   payment_method: string;
   price: number;
   file: string;
@@ -29,7 +28,6 @@ export class CreatePaymentUseCase {
   async execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file,
@@ -40,16 +38,18 @@ export class CreatePaymentUseCase {
     );
     if (!registration) throw new ResourceNotFoundError();
 
-    const ticket = await this.ticketsRepository.findById(event_ticket_id);
+    const ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
+      registration.event_id
+    );
     if (!ticket) throw new ResourceNotFoundError();
 
     const payment = await this.paymentsRepository.create({
       event_registration_id,
-      event_ticket_id,
+      event_ticket_id: ticket.id,
       payment_method,
       price: new Decimal(price),
       file,
-      status: 'sent',
+      status: 'SENT',
     });
 
     return { payment };

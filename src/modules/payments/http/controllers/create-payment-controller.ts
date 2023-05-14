@@ -17,8 +17,12 @@ export async function createPaymentController(
 
   const bodySchema = z
     .object({
-      event_ticket_id: z.string().uuid(),
-      payment_method: z.string(),
+      payment_method: z.enum([
+        'PIX',
+        'DINHEIRO',
+        'CARTÃO DE DÉBITO',
+        'CARTÃO DE CRÉDITO',
+      ]),
       price: z.coerce.number().positive(),
     })
     .strict();
@@ -30,16 +34,13 @@ export async function createPaymentController(
   const user_id = request.user.sub;
   const file = request.file;
   const { event_registration_id } = paramsSchema.parse(request.params);
-  const { event_ticket_id, payment_method, price } = bodySchema.parse(
-    request.body
-  );
+  const { payment_method, price } = bodySchema.parse(request.body);
 
   const createPayment = makeCreatePaymentUseCase();
 
   const { payment } = await createPayment.execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file: String(file.filename),
