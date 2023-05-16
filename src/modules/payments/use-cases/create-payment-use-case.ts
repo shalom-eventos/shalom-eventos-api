@@ -4,7 +4,7 @@ import { Decimal } from '@prisma/client/runtime';
 import { TicketsRepository } from '@/modules/event-tickets/repositories/tickets-repository';
 import { PaymentsRepository } from '../repositories/payments-repository';
 import { RegistrationsRepository } from '@/modules/event-registrations/repositories/registrations-repository';
-import { ResourceNotFoundError } from './errors';
+import { RegistrationNotFoundError, TicketNotFoundError } from './errors';
 
 interface IRequest {
   user_id: string;
@@ -36,12 +36,12 @@ export class CreatePaymentUseCase {
       event_registration_id,
       user_id
     );
-    if (!registration) throw new ResourceNotFoundError();
+    if (!registration) throw new RegistrationNotFoundError();
 
     const ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
       registration.event_id
     );
-    if (!ticket) throw new ResourceNotFoundError();
+    if (!ticket) throw new TicketNotFoundError();
 
     const payment = await this.paymentsRepository.create({
       event_registration_id,
@@ -49,7 +49,7 @@ export class CreatePaymentUseCase {
       payment_method,
       price: new Decimal(price),
       file,
-      status: 'SENT',
+      status: 'sent',
     });
 
     return { payment };

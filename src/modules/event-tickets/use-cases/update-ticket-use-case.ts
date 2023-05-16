@@ -1,7 +1,7 @@
 import { EventTicket, Prisma } from '@prisma/client';
 
 import { TicketsRepository } from '../repositories/tickets-repository';
-import { ResourceNotFoundOrExpiredError } from './errors';
+import { TicketNotFoundOrExpiredError } from './errors';
 
 interface IRequest {
   title?: string;
@@ -22,7 +22,7 @@ export class UpdateEventTicketUseCase {
   ): Promise<IResponse> {
     const ticket = await this.ticketsRepository.findByIdIfEventNotExpired(id);
 
-    if (!ticket) throw new ResourceNotFoundOrExpiredError();
+    if (!ticket) throw new TicketNotFoundOrExpiredError();
 
     if (title) ticket.title = title;
     if (price) ticket.price = new Prisma.Decimal(price);

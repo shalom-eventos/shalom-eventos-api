@@ -6,6 +6,10 @@ export interface RegistrationsRepository {
     id: string,
     user_id: string
   ): Promise<EventRegistration | null>;
+  findByEventAndUser(
+    event_id: string,
+    user_id: string
+  ): Promise<EventRegistration | null>;
   findManyByEvent(event_id: string): Promise<EventRegistration[]>;
   findManyByUser(user_id: string): Promise<EventRegistration[]>;
   create(

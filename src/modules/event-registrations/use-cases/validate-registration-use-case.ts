@@ -1,5 +1,5 @@
 import { EventRegistration } from '@prisma/client';
-import { ResourceNotFoundError } from './errors';
+import { EventNotFoundError } from './errors';
 import { RegistrationsRepository } from '../repositories/registrations-repository';
 
 interface IRequest {
@@ -17,7 +17,7 @@ export class ValidateRegistrationUseCase {
     const registration = await this.registrationsRepository.findById(
       registration_id
     );
-    if (!registration) throw new ResourceNotFoundError();
+    if (!registration) throw new EventNotFoundError();
 
     if (registration.is_approved) return { registration };
 
