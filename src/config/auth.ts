@@ -8,7 +8,7 @@ export default {
       signed: false,
     },
     sign: {
-      expiresIn: '10m',
+      expiresIn: '1d',
     },
   },
 };
