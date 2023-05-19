@@ -169,7 +169,7 @@ var PrismaPaymentsRepository = class {
 };
 
 // src/modules/payments/use-cases/create-payment-use-case.ts
-var import_runtime = require("@prisma/client/runtime");
+var import_binary = require("@prisma/client/runtime/binary");
 
 // src/shared/errors/app-error.ts
 var AppError = class {
@@ -222,7 +222,7 @@ var CreatePaymentUseCase = class {
       event_registration_id,
       event_ticket_id: ticket.id,
       payment_method,
-      price: new import_runtime.Decimal(price),
+      price: new import_binary.Decimal(price),
       file,
       status: "sent"
     });
