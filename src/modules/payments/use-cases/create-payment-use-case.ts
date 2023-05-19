@@ -1,5 +1,5 @@
 import { Payment } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime';
+import { Decimal } from '@prisma/client/runtime/binary';
 
 import { TicketsRepository } from '@/modules/event-tickets/repositories/tickets-repository';
 import { PaymentsRepository } from '../repositories/payments-repository';
