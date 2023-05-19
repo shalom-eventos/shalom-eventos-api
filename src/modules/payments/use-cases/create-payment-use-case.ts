@@ -1,5 +1,4 @@
-import { Payment } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/binary';
+import { Payment, Prisma } from '@prisma/client';
 
 import { TicketsRepository } from '@/modules/event-tickets/repositories/tickets-repository';
 import { PaymentsRepository } from '../repositories/payments-repository';
@@ -47,7 +46,7 @@ export class CreatePaymentUseCase {
       event_registration_id,
       event_ticket_id: ticket.id,
       payment_method,
-      price: new Decimal(price),
+      price: new Prisma.Decimal(price),
       file,
       status: 'sent',
     });
