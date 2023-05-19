@@ -17,12 +17,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/modules/payments/use-cases/update-payment-status-use-case.ts
-var update_payment_status_use_case_exports = {};
-__export(update_payment_status_use_case_exports, {
-  UpdatePaymentStatusUseCase: () => UpdatePaymentStatusUseCase
+// src/modules/payments/use-cases/errors/ticket-not-found-error.ts
+var ticket_not_found_error_exports = {};
+__export(ticket_not_found_error_exports, {
+  TicketNotFoundError: () => TicketNotFoundError
 });
-module.exports = __toCommonJS(update_payment_status_use_case_exports);
+module.exports = __toCommonJS(ticket_not_found_error_exports);
 
 // src/shared/errors/app-error.ts
 var AppError = class {
@@ -32,32 +32,13 @@ var AppError = class {
   }
 };
 
-// src/modules/payments/use-cases/errors/registration-not-found-error.ts
-var RegistrationNotFoundError = class extends AppError {
+// src/modules/payments/use-cases/errors/ticket-not-found-error.ts
+var TicketNotFoundError = class extends AppError {
   constructor() {
-    super("Registration not found.", 404);
-  }
-};
-
-// src/modules/payments/use-cases/update-payment-status-use-case.ts
-var UpdatePaymentStatusUseCase = class {
-  constructor(paymentsRepository) {
-    this.paymentsRepository = paymentsRepository;
-  }
-  async execute({ payment_id }) {
-    const payment = await this.paymentsRepository.findById(payment_id);
-    if (!payment)
-      throw new RegistrationNotFoundError();
-    if (payment.status === "approved") {
-      payment.status = "refused";
-    } else {
-      payment.status = "approved";
-    }
-    await this.paymentsRepository.save(payment);
-    return { payment };
+    super("No valid ticket found.", 404);
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  UpdatePaymentStatusUseCase
+  TicketNotFoundError
 });

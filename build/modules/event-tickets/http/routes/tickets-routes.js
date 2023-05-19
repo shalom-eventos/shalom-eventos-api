@@ -1,7 +1,9 @@
 "use strict";
+var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -15,6 +17,14 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/modules/event-tickets/http/routes/tickets-routes.ts
@@ -122,6 +132,15 @@ var PrismaTicketsRepository = class {
     });
     return ticket;
   }
+  async findFirstNotExpiredByEvent(event_id) {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        event_id,
+        expires_in: { gt: /* @__PURE__ */ new Date() }
+      }
+    });
+    return ticket;
+  }
   async findManyByEvent(event_id) {
     const ticket = await prisma.eventTicket.findMany({
       where: { event_id }
@@ -143,6 +162,9 @@ var PrismaTicketsRepository = class {
   }
 };
 
+// src/modules/event-tickets/use-cases/create-ticket-use-case.ts
+var import_dayjs = __toESM(require("dayjs"));
+
 // src/shared/errors/app-error.ts
 var AppError = class {
   constructor(message, statusCode = 400) {
@@ -151,17 +173,24 @@ var AppError = class {
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/event-tickets/use-cases/errors/event-not-found-error.ts
+var EventNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Event not found.", 404);
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-or-expired-error.ts
-var ResourceNotFoundOrExpiredError = class extends AppError {
+// src/modules/event-tickets/use-cases/errors/ticket-not-found-or-expired-error.ts
+var TicketNotFoundOrExpiredError = class extends AppError {
   constructor() {
-    super("Resource not found or Expired.", 404);
+    super("Ticket not found or Expired.", 404);
+  }
+};
+
+// src/modules/event-tickets/use-cases/errors/expires-in-cannot-be-after-event-end-date-error.ts
+var ExpiresInCannotBeAfterEventEndDateError = class extends AppError {
+  constructor() {
+    super("Expires In cannot be after event end date.", 403);
   }
 };
 
@@ -179,15 +208,15 @@ var CreateTicketUseCase = class {
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
-      throw new ResourceNotFoundError();
+      throw new EventNotFoundError();
+    if ((0, import_dayjs.default)(expires_in).isAfter(eventExists.end_date))
+      throw new ExpiresInCannotBeAfterEventEndDateError();
     const ticket = await this.ticketsRepository.create({
       event_id,
       title,
       price,
       expires_in
     });
-    if (!ticket)
-      throw new ResourceNotFoundError();
     return { ticket };
   }
 };
@@ -266,7 +295,7 @@ var UpdateEventTicketUseCase = class {
   async execute(id, { title, price, expires_in }) {
     const ticket = await this.ticketsRepository.findByIdIfEventNotExpired(id);
     if (!ticket)
-      throw new ResourceNotFoundOrExpiredError();
+      throw new TicketNotFoundOrExpiredError();
     if (title)
       ticket.title = title;
     if (price)

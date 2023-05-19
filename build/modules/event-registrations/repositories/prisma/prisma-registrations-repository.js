@@ -53,6 +53,12 @@ var PrismaRegistrationsRepository = class {
     });
     return registration;
   }
+  async findByEventAndUser(event_id, user_id) {
+    const registration = await prisma.eventRegistration.findFirst({
+      where: { event_id, user_id }
+    });
+    return registration;
+  }
   async findByIdAndUser(id, user_id) {
     const registration = await prisma.eventRegistration.findFirst({
       where: { id, user_id }
@@ -61,13 +67,15 @@ var PrismaRegistrationsRepository = class {
   }
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { event_id }
+      where: { event_id },
+      include: { payment: true }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { user_id }
+      where: { user_id },
+      include: { event: { include: { addresses: true } }, payment: true }
     });
     return registrations;
   }

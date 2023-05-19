@@ -76,10 +76,10 @@ var AppError = class {
   }
 };
 
-// src/modules/payments/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/payments/use-cases/errors/registration-not-found-error.ts
+var RegistrationNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Registration not found.", 404);
   }
 };
 
@@ -91,7 +91,7 @@ var UpdatePaymentStatusUseCase = class {
   async execute({ payment_id }) {
     const payment = await this.paymentsRepository.findById(payment_id);
     if (!payment)
-      throw new ResourceNotFoundError();
+      throw new RegistrationNotFoundError();
     if (payment.status === "approved") {
       payment.status = "refused";
     } else {

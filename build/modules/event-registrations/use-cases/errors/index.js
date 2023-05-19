@@ -20,7 +20,9 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/modules/event-registrations/use-cases/errors/index.ts
 var errors_exports = {};
 __export(errors_exports, {
-  ResourceNotFoundError: () => ResourceNotFoundError
+  EventNotFoundError: () => EventNotFoundError,
+  UserAlreadyRegisteredError: () => UserAlreadyRegisteredError,
+  UserNotFoundError: () => UserNotFoundError
 });
 module.exports = __toCommonJS(errors_exports);
 
@@ -32,13 +34,29 @@ var AppError = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
+var EventNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Event not found.", 404);
+  }
+};
+
+// src/modules/event-registrations/use-cases/errors/user-not-found-error.ts
+var UserNotFoundError = class extends AppError {
+  constructor() {
+    super("User not found.", 404);
+  }
+};
+
+// src/modules/event-registrations/use-cases/errors/user-already-registered-error.ts
+var UserAlreadyRegisteredError = class extends AppError {
+  constructor() {
+    super("User is already registered for this event", 409);
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  ResourceNotFoundError
+  EventNotFoundError,
+  UserAlreadyRegisteredError,
+  UserNotFoundError
 });

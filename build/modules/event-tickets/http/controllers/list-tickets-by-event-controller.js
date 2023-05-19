@@ -67,6 +67,15 @@ var PrismaTicketsRepository = class {
     });
     return ticket;
   }
+  async findFirstNotExpiredByEvent(event_id) {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        event_id,
+        expires_in: { gt: /* @__PURE__ */ new Date() }
+      }
+    });
+    return ticket;
+  }
   async findManyByEvent(event_id) {
     const ticket = await prisma.eventTicket.findMany({
       where: { event_id }

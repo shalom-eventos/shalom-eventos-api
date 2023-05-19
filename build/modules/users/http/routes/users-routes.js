@@ -122,8 +122,8 @@ async function register(request, reply) {
   const registerBodySchema = import_zod2.z.object({
     name: import_zod2.z.string(),
     email: import_zod2.z.string().email(),
-    password: import_zod2.z.string().min(6),
-    password_confirmation: import_zod2.z.string().min(6)
+    password: import_zod2.z.string().min(8),
+    password_confirmation: import_zod2.z.string().min(8)
   }).strict().refine((data) => data.password === data.password_confirmation, {
     message: "Passwords don't match",
     path: ["password_confirmation"]

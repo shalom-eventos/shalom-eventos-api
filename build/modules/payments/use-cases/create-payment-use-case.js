@@ -33,10 +33,17 @@ var AppError = class {
   }
 };
 
-// src/modules/payments/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/payments/use-cases/errors/registration-not-found-error.ts
+var RegistrationNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Registration not found.", 404);
+  }
+};
+
+// src/modules/payments/use-cases/errors/ticket-not-found-error.ts
+var TicketNotFoundError = class extends AppError {
+  constructor() {
+    super("No valid ticket found.", 404);
   }
 };
 
@@ -50,7 +57,6 @@ var CreatePaymentUseCase = class {
   async execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file
@@ -60,13 +66,15 @@ var CreatePaymentUseCase = class {
       user_id
     );
     if (!registration)
-      throw new ResourceNotFoundError();
-    const ticket = await this.ticketsRepository.findById(event_ticket_id);
+      throw new RegistrationNotFoundError();
+    const ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
+      registration.event_id
+    );
     if (!ticket)
-      throw new ResourceNotFoundError();
+      throw new TicketNotFoundError();
     const payment = await this.paymentsRepository.create({
       event_registration_id,
-      event_ticket_id,
+      event_ticket_id: ticket.id,
       payment_method,
       price: new import_runtime.Decimal(price),
       file,

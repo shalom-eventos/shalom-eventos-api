@@ -132,6 +132,15 @@ var PrismaTicketsRepository = class {
     });
     return ticket;
   }
+  async findFirstNotExpiredByEvent(event_id) {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        event_id,
+        expires_in: { gt: /* @__PURE__ */ new Date() }
+      }
+    });
+    return ticket;
+  }
   async findManyByEvent(event_id) {
     const ticket = await prisma.eventTicket.findMany({
       where: { event_id }
@@ -161,6 +170,12 @@ var PrismaRegistrationsRepository = class {
     });
     return registration;
   }
+  async findByEventAndUser(event_id, user_id) {
+    const registration = await prisma.eventRegistration.findFirst({
+      where: { event_id, user_id }
+    });
+    return registration;
+  }
   async findByIdAndUser(id, user_id) {
     const registration = await prisma.eventRegistration.findFirst({
       where: { id, user_id }
@@ -169,13 +184,15 @@ var PrismaRegistrationsRepository = class {
   }
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { event_id }
+      where: { event_id },
+      include: { payment: true }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { user_id }
+      where: { user_id },
+      include: { event: { include: { addresses: true } }, payment: true }
     });
     return registrations;
   }
@@ -228,10 +245,17 @@ var AppError = class {
   }
 };
 
-// src/modules/payments/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/payments/use-cases/errors/registration-not-found-error.ts
+var RegistrationNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Registration not found.", 404);
+  }
+};
+
+// src/modules/payments/use-cases/errors/ticket-not-found-error.ts
+var TicketNotFoundError = class extends AppError {
+  constructor() {
+    super("No valid ticket found.", 404);
   }
 };
 
@@ -245,7 +269,6 @@ var CreatePaymentUseCase = class {
   async execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file
@@ -255,13 +278,15 @@ var CreatePaymentUseCase = class {
       user_id
     );
     if (!registration)
-      throw new ResourceNotFoundError();
-    const ticket = await this.ticketsRepository.findById(event_ticket_id);
+      throw new RegistrationNotFoundError();
+    const ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
+      registration.event_id
+    );
     if (!ticket)
-      throw new ResourceNotFoundError();
+      throw new TicketNotFoundError();
     const payment = await this.paymentsRepository.create({
       event_registration_id,
-      event_ticket_id,
+      event_ticket_id: ticket.id,
       payment_method,
       price: new import_runtime.Decimal(price),
       file,
@@ -290,21 +315,22 @@ async function createPaymentController(request, reply) {
     event_registration_id: import_zod2.z.string().uuid()
   }).strict();
   const bodySchema = import_zod2.z.object({
-    event_ticket_id: import_zod2.z.string().uuid(),
-    payment_method: import_zod2.z.string(),
+    payment_method: import_zod2.z.enum([
+      "PIX",
+      "DINHEIRO",
+      "CART\xC3O DE D\xC9BITO",
+      "CART\xC3O DE CR\xC9DITO"
+    ]),
     price: import_zod2.z.coerce.number().positive()
   }).strict();
   const user_id = request.user.sub;
   const file = request.file;
   const { event_registration_id } = paramsSchema.parse(request.params);
-  const { event_ticket_id, payment_method, price } = bodySchema.parse(
-    request.body
-  );
+  const { payment_method, price } = bodySchema.parse(request.body);
   const createPayment = makeCreatePaymentUseCase();
   const { payment } = await createPayment.execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file: String(file.filename)
@@ -323,7 +349,7 @@ var UpdatePaymentStatusUseCase = class {
   async execute({ payment_id }) {
     const payment = await this.paymentsRepository.findById(payment_id);
     if (!payment)
-      throw new ResourceNotFoundError();
+      throw new RegistrationNotFoundError();
     if (payment.status === "approved") {
       payment.status = "refused";
     } else {

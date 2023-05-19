@@ -217,8 +217,8 @@ async function register(request, reply) {
   const registerBodySchema = import_zod3.z.object({
     name: import_zod3.z.string(),
     email: import_zod3.z.string().email(),
-    password: import_zod3.z.string().min(6),
-    password_confirmation: import_zod3.z.string().min(6)
+    password: import_zod3.z.string().min(8),
+    password_confirmation: import_zod3.z.string().min(8)
   }).strict().refine((data) => data.password === data.password_confirmation, {
     message: "Passwords don't match",
     path: ["password_confirmation"]
@@ -841,6 +841,15 @@ var PrismaTicketsRepository = class {
     });
     return ticket;
   }
+  async findFirstNotExpiredByEvent(event_id) {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        event_id,
+        expires_in: { gt: /* @__PURE__ */ new Date() }
+      }
+    });
+    return ticket;
+  }
   async findManyByEvent(event_id) {
     const ticket = await prisma.eventTicket.findMany({
       where: { event_id }
@@ -862,17 +871,27 @@ var PrismaTicketsRepository = class {
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError4 = class extends AppError {
+// src/modules/event-tickets/use-cases/create-ticket-use-case.ts
+var import_dayjs3 = __toESM(require("dayjs"));
+
+// src/modules/event-tickets/use-cases/errors/event-not-found-error.ts
+var EventNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Event not found.", 404);
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-or-expired-error.ts
-var ResourceNotFoundOrExpiredError = class extends AppError {
+// src/modules/event-tickets/use-cases/errors/ticket-not-found-or-expired-error.ts
+var TicketNotFoundOrExpiredError = class extends AppError {
   constructor() {
-    super("Resource not found or Expired.", 404);
+    super("Ticket not found or Expired.", 404);
+  }
+};
+
+// src/modules/event-tickets/use-cases/errors/expires-in-cannot-be-after-event-end-date-error.ts
+var ExpiresInCannotBeAfterEventEndDateError = class extends AppError {
+  constructor() {
+    super("Expires In cannot be after event end date.", 403);
   }
 };
 
@@ -890,15 +909,15 @@ var CreateTicketUseCase = class {
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
-      throw new ResourceNotFoundError4();
+      throw new EventNotFoundError();
+    if ((0, import_dayjs3.default)(expires_in).isAfter(eventExists.end_date))
+      throw new ExpiresInCannotBeAfterEventEndDateError();
     const ticket = await this.ticketsRepository.create({
       event_id,
       title,
       price,
       expires_in
     });
-    if (!ticket)
-      throw new ResourceNotFoundError4();
     return { ticket };
   }
 };
@@ -977,7 +996,7 @@ var UpdateEventTicketUseCase = class {
   async execute(id, { title, price, expires_in }) {
     const ticket = await this.ticketsRepository.findByIdIfEventNotExpired(id);
     if (!ticket)
-      throw new ResourceNotFoundOrExpiredError();
+      throw new TicketNotFoundOrExpiredError();
     if (title)
       ticket.title = title;
     if (price)
@@ -1038,6 +1057,12 @@ var PrismaRegistrationsRepository = class {
     });
     return registration;
   }
+  async findByEventAndUser(event_id, user_id) {
+    const registration = await prisma.eventRegistration.findFirst({
+      where: { event_id, user_id }
+    });
+    return registration;
+  }
   async findByIdAndUser(id, user_id) {
     const registration = await prisma.eventRegistration.findFirst({
       where: { id, user_id }
@@ -1046,13 +1071,15 @@ var PrismaRegistrationsRepository = class {
   }
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { event_id }
+      where: { event_id },
+      include: { payment: true }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { user_id }
+      where: { user_id },
+      include: { event: { include: { addresses: true } }, payment: true }
     });
     return registrations;
   }
@@ -1071,10 +1098,24 @@ var PrismaRegistrationsRepository = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError5 = class extends AppError {
+// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
+var EventNotFoundError2 = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Event not found.", 404);
+  }
+};
+
+// src/modules/event-registrations/use-cases/errors/user-not-found-error.ts
+var UserNotFoundError = class extends AppError {
+  constructor() {
+    super("User not found.", 404);
+  }
+};
+
+// src/modules/event-registrations/use-cases/errors/user-already-registered-error.ts
+var UserAlreadyRegisteredError = class extends AppError {
+  constructor() {
+    super("User is already registered for this event", 409);
   }
 };
 
@@ -1105,10 +1146,13 @@ var CreateEventRegistrationUseCase = class {
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
-      throw new ResourceNotFoundError5();
+      throw new EventNotFoundError2();
     const userExists = await this.usersRepository.findById(user_id);
     if (!userExists)
-      throw new ResourceNotFoundError5();
+      throw new UserNotFoundError();
+    const registrationExtist = await this.registrationsRepository.findByEventAndUser(event_id, user_id);
+    if (registrationExtist)
+      throw new UserAlreadyRegisteredError();
     const registration = await this.registrationsRepository.create({
       user_id,
       event_id,
@@ -1289,7 +1333,7 @@ var ValidateRegistrationUseCase = class {
       registration_id
     );
     if (!registration)
-      throw new ResourceNotFoundError5();
+      throw new EventNotFoundError2();
     if (registration.is_approved)
       return { registration };
     registration.is_approved = !registration.is_approved;
@@ -1411,10 +1455,17 @@ var PrismaPaymentsRepository = class {
 // src/modules/payments/use-cases/create-payment-use-case.ts
 var import_runtime = require("@prisma/client/runtime");
 
-// src/modules/payments/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError6 = class extends AppError {
+// src/modules/payments/use-cases/errors/registration-not-found-error.ts
+var RegistrationNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Registration not found.", 404);
+  }
+};
+
+// src/modules/payments/use-cases/errors/ticket-not-found-error.ts
+var TicketNotFoundError = class extends AppError {
+  constructor() {
+    super("No valid ticket found.", 404);
   }
 };
 
@@ -1428,7 +1479,6 @@ var CreatePaymentUseCase = class {
   async execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file
@@ -1438,13 +1488,15 @@ var CreatePaymentUseCase = class {
       user_id
     );
     if (!registration)
-      throw new ResourceNotFoundError6();
-    const ticket = await this.ticketsRepository.findById(event_ticket_id);
+      throw new RegistrationNotFoundError();
+    const ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
+      registration.event_id
+    );
     if (!ticket)
-      throw new ResourceNotFoundError6();
+      throw new TicketNotFoundError();
     const payment = await this.paymentsRepository.create({
       event_registration_id,
-      event_ticket_id,
+      event_ticket_id: ticket.id,
       payment_method,
       price: new import_runtime.Decimal(price),
       file,
@@ -1473,21 +1525,22 @@ async function createPaymentController(request, reply) {
     event_registration_id: import_zod16.z.string().uuid()
   }).strict();
   const bodySchema = import_zod16.z.object({
-    event_ticket_id: import_zod16.z.string().uuid(),
-    payment_method: import_zod16.z.string(),
+    payment_method: import_zod16.z.enum([
+      "PIX",
+      "DINHEIRO",
+      "CART\xC3O DE D\xC9BITO",
+      "CART\xC3O DE CR\xC9DITO"
+    ]),
     price: import_zod16.z.coerce.number().positive()
   }).strict();
   const user_id = request.user.sub;
   const file = request.file;
   const { event_registration_id } = paramsSchema.parse(request.params);
-  const { event_ticket_id, payment_method, price } = bodySchema.parse(
-    request.body
-  );
+  const { payment_method, price } = bodySchema.parse(request.body);
   const createPayment = makeCreatePaymentUseCase();
   const { payment } = await createPayment.execute({
     user_id,
     event_registration_id,
-    event_ticket_id,
     payment_method,
     price,
     file: String(file.filename)
@@ -1506,7 +1559,7 @@ var UpdatePaymentStatusUseCase = class {
   async execute({ payment_id }) {
     const payment = await this.paymentsRepository.findById(payment_id);
     if (!payment)
-      throw new ResourceNotFoundError6();
+      throw new RegistrationNotFoundError();
     if (payment.status === "approved") {
       payment.status = "refused";
     } else {

@@ -17,37 +17,22 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/modules/payments/use-cases/errors/index.ts
-var errors_exports = {};
-__export(errors_exports, {
-  RegistrationNotFoundError: () => RegistrationNotFoundError,
-  TicketNotFoundError: () => TicketNotFoundError
+// src/shared/utils/include-url-fields-url.ts
+var include_url_fields_url_exports = {};
+__export(include_url_fields_url_exports, {
+  includeURLFields: () => includeURLFields
 });
-module.exports = __toCommonJS(errors_exports);
-
-// src/shared/errors/app-error.ts
-var AppError = class {
-  constructor(message, statusCode = 400) {
-    this.message = message;
-    this.statusCode = statusCode;
+module.exports = __toCommonJS(include_url_fields_url_exports);
+function includeURLFields(model, keys) {
+  let newModel = { ...model };
+  for (let key of keys) {
+    const newKey = `${String(key)}_url`;
+    const newValue = `${newKey}/files/${model[key]}`;
+    newModel = { ...model, newKey: newValue };
   }
-};
-
-// src/modules/payments/use-cases/errors/registration-not-found-error.ts
-var RegistrationNotFoundError = class extends AppError {
-  constructor() {
-    super("Registration not found.", 404);
-  }
-};
-
-// src/modules/payments/use-cases/errors/ticket-not-found-error.ts
-var TicketNotFoundError = class extends AppError {
-  constructor() {
-    super("No valid ticket found.", 404);
-  }
-};
+  return newModel;
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  RegistrationNotFoundError,
-  TicketNotFoundError
+  includeURLFields
 });

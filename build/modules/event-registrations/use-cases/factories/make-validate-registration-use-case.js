@@ -53,6 +53,12 @@ var PrismaRegistrationsRepository = class {
     });
     return registration;
   }
+  async findByEventAndUser(event_id, user_id) {
+    const registration = await prisma.eventRegistration.findFirst({
+      where: { event_id, user_id }
+    });
+    return registration;
+  }
   async findByIdAndUser(id, user_id) {
     const registration = await prisma.eventRegistration.findFirst({
       where: { id, user_id }
@@ -61,13 +67,15 @@ var PrismaRegistrationsRepository = class {
   }
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { event_id }
+      where: { event_id },
+      include: { payment: true }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { user_id }
+      where: { user_id },
+      include: { event: { include: { addresses: true } }, payment: true }
     });
     return registrations;
   }
@@ -94,10 +102,10 @@ var AppError = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
+var EventNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Event not found.", 404);
   }
 };
 
@@ -111,7 +119,7 @@ var ValidateRegistrationUseCase = class {
       registration_id
     );
     if (!registration)
-      throw new ResourceNotFoundError();
+      throw new EventNotFoundError();
     if (registration.is_approved)
       return { registration };
     registration.is_approved = !registration.is_approved;

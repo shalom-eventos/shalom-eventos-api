@@ -67,6 +67,15 @@ var PrismaTicketsRepository = class {
     });
     return ticket;
   }
+  async findFirstNotExpiredByEvent(event_id) {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        event_id,
+        expires_in: { gt: /* @__PURE__ */ new Date() }
+      }
+    });
+    return ticket;
+  }
   async findManyByEvent(event_id) {
     const ticket = await prisma.eventTicket.findMany({
       where: { event_id }
@@ -99,10 +108,10 @@ var AppError = class {
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-or-expired-error.ts
-var ResourceNotFoundOrExpiredError = class extends AppError {
+// src/modules/event-tickets/use-cases/errors/ticket-not-found-or-expired-error.ts
+var TicketNotFoundOrExpiredError = class extends AppError {
   constructor() {
-    super("Resource not found or Expired.", 404);
+    super("Ticket not found or Expired.", 404);
   }
 };
 
@@ -114,7 +123,7 @@ var UpdateEventTicketUseCase = class {
   async execute(id, { title, price, expires_in }) {
     const ticket = await this.ticketsRepository.findByIdIfEventNotExpired(id);
     if (!ticket)
-      throw new ResourceNotFoundOrExpiredError();
+      throw new TicketNotFoundOrExpiredError();
     if (title)
       ticket.title = title;
     if (price)

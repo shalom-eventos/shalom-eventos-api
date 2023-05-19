@@ -20,8 +20,9 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/modules/event-tickets/use-cases/errors/index.ts
 var errors_exports = {};
 __export(errors_exports, {
-  ResourceNotFoundError: () => ResourceNotFoundError,
-  ResourceNotFoundOrExpiredError: () => ResourceNotFoundOrExpiredError
+  EventNotFoundError: () => EventNotFoundError,
+  ExpiresInCannotBeAfterEventEndDateError: () => ExpiresInCannotBeAfterEventEndDateError,
+  TicketNotFoundOrExpiredError: () => TicketNotFoundOrExpiredError
 });
 module.exports = __toCommonJS(errors_exports);
 
@@ -33,21 +34,29 @@ var AppError = class {
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-error.ts
-var ResourceNotFoundError = class extends AppError {
+// src/modules/event-tickets/use-cases/errors/event-not-found-error.ts
+var EventNotFoundError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("Event not found.", 404);
   }
 };
 
-// src/modules/event-tickets/use-cases/errors/resource-not-found-or-expired-error.ts
-var ResourceNotFoundOrExpiredError = class extends AppError {
+// src/modules/event-tickets/use-cases/errors/ticket-not-found-or-expired-error.ts
+var TicketNotFoundOrExpiredError = class extends AppError {
   constructor() {
-    super("Resource not found or Expired.", 404);
+    super("Ticket not found or Expired.", 404);
+  }
+};
+
+// src/modules/event-tickets/use-cases/errors/expires-in-cannot-be-after-event-end-date-error.ts
+var ExpiresInCannotBeAfterEventEndDateError = class extends AppError {
+  constructor() {
+    super("Expires In cannot be after event end date.", 403);
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  ResourceNotFoundError,
-  ResourceNotFoundOrExpiredError
+  EventNotFoundError,
+  ExpiresInCannotBeAfterEventEndDateError,
+  TicketNotFoundOrExpiredError
 });
