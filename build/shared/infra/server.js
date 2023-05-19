@@ -1461,7 +1461,7 @@ var PrismaPaymentsRepository = class {
 };
 
 // src/modules/payments/use-cases/create-payment-use-case.ts
-var import_binary = require("@prisma/client/runtime/binary");
+var import_client3 = require("@prisma/client");
 
 // src/modules/payments/use-cases/errors/registration-not-found-error.ts
 var RegistrationNotFoundError = class extends AppError {
@@ -1506,7 +1506,7 @@ var CreatePaymentUseCase = class {
       event_registration_id,
       event_ticket_id: ticket.id,
       payment_method,
-      price: new import_binary.Decimal(price),
+      price: new import_client3.Prisma.Decimal(price),
       file,
       status: "sent"
     });

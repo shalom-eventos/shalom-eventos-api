@@ -23,7 +23,7 @@ __export(create_payment_use_case_exports, {
   CreatePaymentUseCase: () => CreatePaymentUseCase
 });
 module.exports = __toCommonJS(create_payment_use_case_exports);
-var import_binary = require("@prisma/client/runtime/binary");
+var import_client = require("@prisma/client");
 
 // src/shared/errors/app-error.ts
 var AppError = class {
@@ -76,7 +76,7 @@ var CreatePaymentUseCase = class {
       event_registration_id,
       event_ticket_id: ticket.id,
       payment_method,
-      price: new import_binary.Decimal(price),
+      price: new import_client.Prisma.Decimal(price),
       file,
       status: "sent"
     });
