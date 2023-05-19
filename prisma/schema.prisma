@@ -66,7 +66,7 @@ model EventTicket {
   id         String    @id @default(uuid())
   event_id   String
   title      String
-  price      Decimal
+  price      Decimal   @db.Decimal(10, 2)
   expires_in DateTime?
   created_at DateTime  @default(now())
   updated_at DateTime  @default(now()) @updatedAt
@@ -111,7 +111,7 @@ model Payment {
   event_registration_id String   @unique
   event_ticket_id       String
   payment_method        String
-  price                 Decimal
+  price                 Decimal  @db.Decimal(10, 2)
   file                  String?
   status                String
   created_at            DateTime @default(now())

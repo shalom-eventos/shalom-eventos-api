@@ -1,6 +1,6 @@
 import { Payment } from '@prisma/client';
 
-import { ResourceNotFoundError } from './errors';
+import { RegistrationNotFoundError } from './errors';
 import { PaymentsRepository } from '../repositories/payments-repository';
 
 interface IRequest {
@@ -16,7 +16,7 @@ export class UpdatePaymentStatusUseCase {
 
   async execute({ payment_id }: IRequest): Promise<IResponse> {
     const payment = await this.paymentsRepository.findById(payment_id);
-    if (!payment) throw new ResourceNotFoundError();
+    if (!payment) throw new RegistrationNotFoundError();
 
     if (payment.status === 'approved') {
       payment.status = 'refused';

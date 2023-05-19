@@ -6,4 +6,5 @@ export interface TicketsRepository {
   create(data: Prisma.EventTicketUncheckedCreateInput): Promise<EventTicket>;
   save(data: EventTicket): Promise<EventTicket>;
   findByIdIfEventNotExpired(id: string): Promise<EventTicket | null>;
+  findFirstNotExpiredByEvent(event_id: string): Promise<EventTicket | null>;
 }

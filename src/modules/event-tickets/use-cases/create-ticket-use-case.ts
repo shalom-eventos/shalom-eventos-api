@@ -1,8 +1,12 @@
 import { EventTicket } from '@prisma/client';
+import dayjs from 'dayjs';
 
 import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { TicketsRepository } from '../repositories/tickets-repository';
-import { ResourceNotFoundError } from './errors';
+import {
+  EventNotFoundError,
+  ExpiresInCannotBeAfterEventEndDateError,
+} from './errors';
 
 interface IRequest {
   event_id: string;
@@ -28,7 +32,10 @@ export class CreateTicketUseCase {
     expires_in,
   }: IRequest): Promise<IResponse> {
     const eventExists = await this.eventsRepository.findById(event_id);
-    if (!eventExists) throw new ResourceNotFoundError();
+    if (!eventExists) throw new EventNotFoundError();
+
+    if (dayjs(expires_in).isAfter(eventExists.end_date))
+      throw new ExpiresInCannotBeAfterEventEndDateError();
 
     const ticket = await this.ticketsRepository.create({
       event_id,
@@ -36,8 +43,6 @@ export class CreateTicketUseCase {
       price,
       expires_in,
     });
-
-    if (!ticket) throw new ResourceNotFoundError();
 
     return { ticket };
   }

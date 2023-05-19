@@ -11,6 +11,7 @@ export class PrismaTicketsRepository implements TicketsRepository {
 
     return ticket;
   }
+
   async findByIdIfEventNotExpired(id: string) {
     const ticket = await prisma.eventTicket.findFirst({
       where: {
@@ -20,6 +21,19 @@ export class PrismaTicketsRepository implements TicketsRepository {
             gt: new Date(),
           },
         },
+      },
+    });
+
+    return ticket;
+  }
+
+  async findFirstNotExpiredByEvent(
+    event_id: string
+  ): Promise<EventTicket | null> {
+    const ticket = await prisma.eventTicket.findFirst({
+      where: {
+        event_id,
+        expires_in: { gt: new Date() },
       },
     });
 

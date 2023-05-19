@@ -4,7 +4,8 @@ import { EventsRepository } from '@/modules/events/repositories/events-repositor
 import { UsersRepository } from '@/modules/users/repositories/users-repository';
 
 import { RegistrationsRepository } from '../repositories/registrations-repository';
-import { ResourceNotFoundError } from './errors';
+import { EventNotFoundError, UserNotFoundError } from './errors';
+import { UserAlreadyRegisteredError } from './errors/user-already-registered-error';
 
 interface IRequest {
   user_id: string;
@@ -55,10 +56,14 @@ export class CreateEventRegistrationUseCase {
     accepted_the_terms,
   }: IRequest): Promise<IResponse> {
     const eventExists = await this.eventsRepository.findById(event_id);
-    if (!eventExists) throw new ResourceNotFoundError();
+    if (!eventExists) throw new EventNotFoundError();
 
     const userExists = await this.usersRepository.findById(user_id);
-    if (!userExists) throw new ResourceNotFoundError();
+    if (!userExists) throw new UserNotFoundError();
+
+    const registrationExtist =
+      await this.registrationsRepository.findByEventAndUser(event_id, user_id);
+    if (registrationExtist) throw new UserAlreadyRegisteredError();
 
     const registration = await this.registrationsRepository.create({
       user_id,
