@@ -1,11 +1,12 @@
 import { Address } from '@prisma/client';
 
-import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { AddressesRepository } from '../repositories/addresses-repository';
-import { AlreadyHasAddressError, UserNotFoundError } from './errors';
+import { AlreadyHasAddressError, ResourceNotFoundError } from './errors';
+import { UsersRepository } from '@/modules/users/repositories/users-repository';
+import { UserIsNotParticipantError } from './errors/user-is-not-participant-error';
 
 interface IRequest {
-  event_id: string;
+  user_id: string;
   street: string;
   street_number: string;
   complement?: string;
@@ -19,14 +20,14 @@ interface IResponse {
   address: Address;
 }
 
-export class CreateAddressToEventUseCase {
+export class CreateAddressToParticipantUseCase {
   constructor(
     private addressesRepository: AddressesRepository,
-    private eventsRepository: EventsRepository
+    private usersRepository: UsersRepository
   ) {}
 
   async execute({
-    event_id,
+    user_id,
     street,
     street_number,
     complement,
@@ -35,11 +36,16 @@ export class CreateAddressToEventUseCase {
     city,
     state,
   }: IRequest): Promise<IResponse> {
-    const event = await this.eventsRepository.findByIdWithRelations(event_id);
+    const userParticipant = await this.usersRepository.findByIdWithRelations(
+      user_id
+    );
 
-    if (!event) throw new UserNotFoundError();
+    if (!userParticipant) throw new ResourceNotFoundError('User');
 
-    if (event?.addresses && event.addresses.length > 0)
+    if (userParticipant.role !== 'PARTICIPANT')
+      throw new UserIsNotParticipantError();
+
+    if (userParticipant?.addresses && userParticipant.addresses.length > 0)
       throw new AlreadyHasAddressError();
 
     const address = await this.addressesRepository.create({
@@ -50,9 +56,9 @@ export class CreateAddressToEventUseCase {
       district,
       city,
       state,
-      events: {
+      users: {
         connect: {
-          id: event.id,
+          id: userParticipant.id,
         },
       },
     });
