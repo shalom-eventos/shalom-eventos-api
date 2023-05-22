@@ -25,6 +25,7 @@ model User {
   updated_at    DateTime @default(now()) @updatedAt
 
   registrations EventRegistration[]
+  addresses     Address[]           @relation("addresses_users")
 
   @@map("users")
 }
@@ -58,6 +59,7 @@ model Address {
   updated_at    DateTime @default(now()) @updatedAt
 
   events Event[] @relation("addresses_events")
+  users  User[]  @relation("addresses_users")
 
   @@map("addresses")
 }
