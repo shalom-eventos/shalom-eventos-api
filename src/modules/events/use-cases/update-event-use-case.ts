@@ -1,11 +1,14 @@
 import dayjs from 'dayjs';
 import { Event } from '@prisma/client';
 
+import { generateSlug } from '@/shared/utils/generate-slug';
 import { EventsRepository } from '../repositories/events-repository';
 import { InvalidDateIntervalError } from './errors/invalid-date-interval-error';
 import { ResourceNotFoundError } from './errors/resource-not-found-error';
+import { SlugExistsError } from './errors/slug-exists-error';
 
 interface IRequest {
+  slug?: string;
   title?: string;
   description?: string;
   start_date?: Date;
@@ -21,7 +24,7 @@ export class UpdateEventUseCase {
 
   async execute(
     id: string,
-    { title, description, start_date, end_date }: IRequest
+    { slug, title, description, start_date, end_date }: IRequest
   ): Promise<IResponse> {
     const event = await this.eventsRepository.findById(id);
 
@@ -45,6 +48,14 @@ export class UpdateEventUseCase {
       if (dayjs(end_date).isBefore(event.start_date))
         throw new InvalidDateIntervalError();
       event.end_date = end_date;
+    }
+
+    if (slug) {
+      const slugHashed = generateSlug({ keyword: slug });
+      const slugExists = await this.eventsRepository.findBySlug(slugHashed);
+      if (slugExists && slugHashed !== event.slug) throw new SlugExistsError();
+
+      event.slug = slugHashed;
     }
 
     await this.eventsRepository.save(event);

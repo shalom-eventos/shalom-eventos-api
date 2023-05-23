@@ -10,6 +10,13 @@ export class PrismaEventsRepository implements EventsRepository {
 
     return event;
   }
+  async findBySlug(slug: string) {
+    const event = await prisma.event.findUnique({
+      where: { slug },
+    });
+
+    return event;
+  }
 
   async findMany() {
     const events = await prisma.event.findMany({});
