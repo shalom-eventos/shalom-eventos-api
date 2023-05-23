@@ -7,7 +7,7 @@ import { eventsRoutes } from '@/modules/events/http/routes/events-routes';
 import { tokenRoutes } from '@/modules/users/http/routes/token-routes';
 import { addressesRoutes } from '@/modules/addresses/http/routes';
 import { ticketsRoutes } from '@/modules/event-tickets/http/routes/tickets-routes';
-import { registrationsRoutes } from '@/modules/event-registrations/http/routes/registrations-routes';
+import { registrationsRoutes } from '@/modules/event-registrations/http/routes';
 import { paymentsRoutes } from '@/modules/payments/http/routes/payments-routes';
 import { participantsRoutes } from '@/modules/participants/http/routes';
 

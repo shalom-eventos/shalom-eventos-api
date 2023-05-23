@@ -1,13 +1,14 @@
 import { EventRegistration } from '@prisma/client';
 
 import { RegistrationsRepository } from '../repositories/registrations-repository';
+import { FindManyByEventResponse } from '../dtos/IFindManyByEventResponse';
 
 interface IRequest {
   event_id: string;
 }
 
 interface IResponse {
-  registrations: EventRegistration[];
+  registrations: FindManyByEventResponse[];
 }
 
 export class ListRegistrationsByEventUseCase {

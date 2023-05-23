@@ -34,6 +34,7 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
       include: {
         user: { select: { email: true, participant: true } },
         payment: true,
+        event: { include: { addresses: true } },
       },
     });
 
