@@ -31,7 +31,7 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
   async findManyByEvent(event_id: string) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
-      include: { payment: true },
+      include: { user: { include: { participant: true } }, payment: true },
     });
 
     return registrations;
