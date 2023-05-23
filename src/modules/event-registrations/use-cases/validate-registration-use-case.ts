@@ -19,8 +19,6 @@ export class ValidateRegistrationUseCase {
     );
     if (!registration) throw new ResourceNotFoundError('Registration');
 
-    if (registration.is_approved) return { registration };
-
     registration.is_approved = !registration.is_approved;
 
     await this.registrationsRepository.save(registration);
