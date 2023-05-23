@@ -26,12 +26,36 @@ model User {
 
   registrations EventRegistration[]
   addresses     Address[]           @relation("addresses_users")
+  participant   Participant?
 
   @@map("users")
 }
 
+model Participant {
+  id                    String   @id @default(uuid())
+  user_id               String   @unique
+  full_name             String
+  phone_number          String
+  birthdate             DateTime
+  document_number       String
+  document_type         String
+  guardian_name         String?
+  guardian_phone_number String?
+  prayer_group          String?
+  community_type        String?
+  pcd_description       String?
+  allergy_description   String?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @default(now()) @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("participants")
+}
+
 model Event {
   id          String    @id @default(uuid())
+  slug        String    @unique
   title       String
   description String?
   start_date  DateTime
@@ -65,13 +89,14 @@ model Address {
 }
 
 model EventTicket {
-  id         String    @id @default(uuid())
-  event_id   String
-  title      String
-  price      Decimal   @db.Decimal(10, 2)
-  expires_in DateTime?
-  created_at DateTime  @default(now())
-  updated_at DateTime  @default(now()) @updatedAt
+  id                   String    @id @default(uuid())
+  event_id             String
+  title                String
+  price                Decimal   @db.Decimal(10, 2)
+  expires_in           DateTime?
+  external_payment_url String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @default(now()) @updatedAt
 
   event    Event     @relation(fields: [event_id], references: [id])
   payments Payment[]
@@ -80,26 +105,17 @@ model EventTicket {
 }
 
 model EventRegistration {
-  id                    String   @id @default(uuid())
-  user_id               String
-  event_id              String
-  full_name             String
-  phone_number          String
-  age                   Int
-  document_number       String
-  document_type         String
-  guardian_name         String?
-  guardian_phone_number String?
-  prayer_group          String?
-  event_source          String?
-  community_type        String?
-  pcd_description       String?
-  allergy_description   String?
-  transportation_mode   String
-  accepted_the_terms    Boolean
-  is_approved           Boolean  @default(false)
-  created_at            DateTime @default(now())
-  updated_at            DateTime @default(now()) @updatedAt
+  id                  String   @id @default(uuid())
+  user_id             String
+  event_id            String
+  credential_name     String
+  event_source        String?
+  transportation_mode String
+  accepted_the_terms  Boolean
+  is_approved         Boolean  @default(false)
+  checked_in          Boolean  @default(false)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @default(now()) @updatedAt
 
   event   Event    @relation(fields: [event_id], references: [id])
   user    User     @relation(fields: [user_id], references: [id])
