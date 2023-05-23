@@ -71,7 +71,8 @@ var PrismaRegistrationsRepository = class {
       where: { event_id },
       include: {
         user: { select: { email: true, participant: true } },
-        payment: true
+        payment: true,
+        event: { include: { addresses: true } }
       }
     });
     return registrations;
@@ -130,8 +131,6 @@ var ValidateRegistrationUseCase = class {
     );
     if (!registration)
       throw new ResourceNotFoundError("Registration");
-    if (registration.is_approved)
-      return { registration };
     registration.is_approved = !registration.is_approved;
     await this.registrationsRepository.save(registration);
     return { registration };

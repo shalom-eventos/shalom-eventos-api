@@ -1459,7 +1459,7 @@ async function ticketsRoutes(app2) {
   app2.put("/tickets/:id", middlewares, updateTicketController);
 }
 
-// src/modules/event-registrations/http/controllers/create-registration-controller.ts
+// src/modules/event-registrations/http/controllers/list-registrations-by-event-controller.ts
 var import_zod16 = require("zod");
 
 // src/modules/event-registrations/repositories/prisma/prisma-registrations-repository.ts
@@ -1487,7 +1487,8 @@ var PrismaRegistrationsRepository = class {
       where: { event_id },
       include: {
         user: { select: { email: true, participant: true } },
-        payment: true
+        payment: true,
+        event: { include: { addresses: true } }
       }
     });
     return registrations;
@@ -1520,6 +1521,44 @@ var PrismaRegistrationsRepository = class {
   }
 };
 
+// src/modules/event-registrations/use-cases/list-registrations-by-event-use-case.ts
+var ListRegistrationsByEventUseCase = class {
+  constructor(registrationsRepository) {
+    this.registrationsRepository = registrationsRepository;
+  }
+  async execute({ event_id }) {
+    const registrations = await this.registrationsRepository.findManyByEvent(
+      event_id
+    );
+    return { registrations };
+  }
+};
+
+// src/modules/event-registrations/use-cases/factories/make-list-registrations-by-event-use-case.ts
+function makeListRegistrationsByEventUseCase() {
+  const eventRegistrationsRepository = new PrismaRegistrationsRepository();
+  const useCase = new ListRegistrationsByEventUseCase(
+    eventRegistrationsRepository
+  );
+  return useCase;
+}
+
+// src/modules/event-registrations/http/controllers/list-registrations-by-event-controller.ts
+async function listRegistrationsByEventController(request, reply) {
+  const paramsSchema = import_zod16.z.object({
+    event_id: import_zod16.z.string().uuid()
+  }).strict();
+  const { event_id } = paramsSchema.parse(request.params);
+  const listRegistrationsByEvent = makeListRegistrationsByEventUseCase();
+  const { registrations } = await listRegistrationsByEvent.execute({
+    event_id
+  });
+  return reply.status(200).send({ registrations });
+}
+
+// src/modules/event-registrations/http/controllers/validate-registration-controller.ts
+var import_zod17 = require("zod");
+
 // src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError4 = class extends AppError {
   constructor(resource) {
@@ -1533,6 +1572,134 @@ var UserAlreadyRegisteredError = class extends AppError {
     super("User is already registered for this event", 409);
   }
 };
+
+// src/modules/event-registrations/use-cases/validate-registration-use-case.ts
+var ValidateRegistrationUseCase = class {
+  constructor(registrationsRepository) {
+    this.registrationsRepository = registrationsRepository;
+  }
+  async execute({ registration_id }) {
+    const registration = await this.registrationsRepository.findById(
+      registration_id
+    );
+    if (!registration)
+      throw new ResourceNotFoundError4("Registration");
+    registration.is_approved = !registration.is_approved;
+    await this.registrationsRepository.save(registration);
+    return { registration };
+  }
+};
+
+// src/modules/event-registrations/use-cases/factories/make-validate-registration-use-case.ts
+function makeValidateRegistrationUseCase() {
+  const eventRegistrationsRepository = new PrismaRegistrationsRepository();
+  const useCase = new ValidateRegistrationUseCase(eventRegistrationsRepository);
+  return useCase;
+}
+
+// src/modules/event-registrations/http/controllers/validate-registration-controller.ts
+async function validateRegistrationController(request, reply) {
+  const paramsSchema = import_zod17.z.object({
+    registration_id: import_zod17.z.string().uuid()
+  }).strict();
+  const { registration_id } = paramsSchema.parse(request.params);
+  const validateRegistration = makeValidateRegistrationUseCase();
+  const { registration } = await validateRegistration.execute({
+    registration_id
+  });
+  return reply.status(200).send({ registration });
+}
+
+// src/modules/event-registrations/http/controllers/export-registrations-controller.ts
+var csv = __toESM(require("fast-csv"));
+var import_dayjs4 = __toESM(require("dayjs"));
+var import_zod18 = require("zod");
+
+// src/shared/utils/translate-payment-status.ts
+var translateStatus = {
+  waiting: "Aguardando pagamento",
+  sent: "Enviado",
+  approved: "Aprovado",
+  refused: "Recusado"
+};
+function translatePaymentStatus(originalStatus = "waiting") {
+  return translateStatus[originalStatus];
+}
+
+// src/modules/event-registrations/http/controllers/export-registrations-controller.ts
+async function exportRegistrationsController(request, reply) {
+  const paramsSchema = import_zod18.z.object({
+    event_id: import_zod18.z.string().uuid()
+  }).strict();
+  const { event_id } = paramsSchema.parse(request.params);
+  try {
+    const listRegistrations = makeListRegistrationsByEventUseCase();
+    const { registrations } = await listRegistrations.execute({ event_id });
+    const csvStream = csv.format({ headers: true });
+    registrations.forEach((registration) => {
+      const participantData = registration?.user?.participant;
+      csvStream.write({
+        Evento: registration?.event?.title ?? "-",
+        NomeCompleto: participantData?.full_name,
+        NomeCredencial: registration.credential_name,
+        Email: registration?.user?.email,
+        Telefone: participantData?.phone_number,
+        NumeroDocumento: participantData?.document_number,
+        TipoDocumento: participantData?.document_type,
+        DataNascimento: participantData?.birthdate ? (0, import_dayjs4.default)(participantData?.birthdate).format("DD/MM/YYYY") : "-",
+        Idade: participantData?.birthdate ? (0, import_dayjs4.default)(/* @__PURE__ */ new Date()).diff(participantData?.birthdate, "years") : "-",
+        NomeResponsavel: participantData?.guardian_name,
+        TelefoneResponsavel: participantData?.guardian_phone_number,
+        GrupoOracao: participantData?.prayer_group,
+        TipoComunidade: participantData?.community_type,
+        PCD: participantData?.pcd_description,
+        Alergias: participantData?.allergy_description,
+        MeioDeTransporte: registration.transportation_mode,
+        ComoSoubeDoEvento: registration.event_source,
+        InscricaoAprovada: registration.is_approved ? "Sim" : "N\xE3o",
+        ComprovantePagamento: translatePaymentStatus(
+          registration.payment?.status
+        ),
+        CheckIn: registration.checked_in ? "Sim" : "N\xE3o"
+      });
+    });
+    csvStream.end();
+    reply.header("Content-Type", "text/csv");
+    reply.header(
+      "Content-Disposition",
+      "attachment; filename=participants.csv"
+    );
+    reply.send(csvStream);
+    return reply;
+  } catch (error) {
+    reply.status(500).send(error);
+  }
+}
+
+// src/modules/event-registrations/http/routes/admin-registrations-routes.ts
+async function adminRegistrationsRoutes(app2) {
+  const adminMiddlewares = {
+    onRequest: [verifyJWT, verifyUserRole("ADMINISTRATOR")]
+  };
+  app2.get(
+    "/registrations/export/event/:event_id",
+    adminMiddlewares,
+    exportRegistrationsController
+  );
+  app2.get(
+    "/registrations/event/:event_id",
+    adminMiddlewares,
+    listRegistrationsByEventController
+  );
+  app2.patch(
+    "/registrations/:registration_id/approve",
+    adminMiddlewares,
+    validateRegistrationController
+  );
+}
+
+// src/modules/event-registrations/http/controllers/create-registration-controller.ts
+var import_zod19 = require("zod");
 
 // src/modules/event-registrations/use-cases/create-registration-use-case.ts
 var CreateEventRegistrationUseCase = class {
@@ -1585,14 +1752,14 @@ function makeCreateEventRegistrationUseCase() {
 
 // src/modules/event-registrations/http/controllers/create-registration-controller.ts
 async function createRegistrationController(request, reply) {
-  const paramsSchema = import_zod16.z.object({
-    event_id: import_zod16.z.string().uuid()
+  const paramsSchema = import_zod19.z.object({
+    event_id: import_zod19.z.string().uuid()
   }).strict();
-  const bodySchema = import_zod16.z.object({
-    credential_name: import_zod16.z.string().min(5).max(18),
-    event_source: import_zod16.z.string().optional(),
-    transportation_mode: import_zod16.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
-    accepted_the_terms: import_zod16.z.boolean().refine((value) => value === true, {
+  const bodySchema = import_zod19.z.object({
+    credential_name: import_zod19.z.string().min(5).max(18),
+    event_source: import_zod19.z.string().optional(),
+    transportation_mode: import_zod19.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
+    accepted_the_terms: import_zod19.z.boolean().refine((value) => value === true, {
       message: "User must accept the terms",
       path: ["accepted_the_terms"]
     })
@@ -1615,44 +1782,6 @@ async function createRegistrationController(request, reply) {
     credential_name
   });
   return reply.status(200).send({ registration });
-}
-
-// src/modules/event-registrations/http/controllers/list-registrations-by-event-controller.ts
-var import_zod17 = require("zod");
-
-// src/modules/event-registrations/use-cases/list-registrations-by-event-use-case.ts
-var ListRegistrationsByEventUseCase = class {
-  constructor(registrationsRepository) {
-    this.registrationsRepository = registrationsRepository;
-  }
-  async execute({ event_id }) {
-    const registrations = await this.registrationsRepository.findManyByEvent(
-      event_id
-    );
-    return { registrations };
-  }
-};
-
-// src/modules/event-registrations/use-cases/factories/make-list-registrations-by-event-use-case.ts
-function makeListRegistrationsByEventUseCase() {
-  const eventRegistrationsRepository = new PrismaRegistrationsRepository();
-  const useCase = new ListRegistrationsByEventUseCase(
-    eventRegistrationsRepository
-  );
-  return useCase;
-}
-
-// src/modules/event-registrations/http/controllers/list-registrations-by-event-controller.ts
-async function listRegistrationsByEventController(request, reply) {
-  const paramsSchema = import_zod17.z.object({
-    event_id: import_zod17.z.string().uuid()
-  }).strict();
-  const { event_id } = paramsSchema.parse(request.params);
-  const listRegistrationsByEvent = makeListRegistrationsByEventUseCase();
-  const { registrations } = await listRegistrationsByEvent.execute({
-    event_id
-  });
-  return reply.status(200).send({ registrations });
 }
 
 // src/modules/event-registrations/use-cases/list-registrations-by-user-use-case.ts
@@ -1685,66 +1814,11 @@ async function listRegistrationsByUserController(request, reply) {
   return reply.status(200).send({ registrations });
 }
 
-// src/modules/event-registrations/http/controllers/validate-registration-controller.ts
-var import_zod18 = require("zod");
-
-// src/modules/event-registrations/use-cases/validate-registration-use-case.ts
-var ValidateRegistrationUseCase = class {
-  constructor(registrationsRepository) {
-    this.registrationsRepository = registrationsRepository;
-  }
-  async execute({ registration_id }) {
-    const registration = await this.registrationsRepository.findById(
-      registration_id
-    );
-    if (!registration)
-      throw new ResourceNotFoundError4("Registration");
-    if (registration.is_approved)
-      return { registration };
-    registration.is_approved = !registration.is_approved;
-    await this.registrationsRepository.save(registration);
-    return { registration };
-  }
-};
-
-// src/modules/event-registrations/use-cases/factories/make-validate-registration-use-case.ts
-function makeValidateRegistrationUseCase() {
-  const eventRegistrationsRepository = new PrismaRegistrationsRepository();
-  const useCase = new ValidateRegistrationUseCase(eventRegistrationsRepository);
-  return useCase;
-}
-
-// src/modules/event-registrations/http/controllers/validate-registration-controller.ts
-async function validateRegistrationController(request, reply) {
-  const paramsSchema = import_zod18.z.object({
-    registration_id: import_zod18.z.string().uuid()
-  }).strict();
-  const { registration_id } = paramsSchema.parse(request.params);
-  const validateRegistration = makeValidateRegistrationUseCase();
-  const { registration } = await validateRegistration.execute({
-    registration_id
-  });
-  return reply.status(200).send({ registration });
-}
-
-// src/modules/event-registrations/http/routes/registrations-routes.ts
-async function registrationsRoutes(app2) {
-  const adminMiddlewares = {
-    onRequest: [verifyJWT, verifyUserRole("ADMINISTRATOR")]
-  };
+// src/modules/event-registrations/http/routes/participant-registrations-routes.ts
+async function participantRegistrationsRoutes(app2) {
   const participantMiddlewares = {
     onRequest: [verifyJWT, verifyUserRole("PARTICIPANT")]
   };
-  app2.get(
-    "/registrations/event/:event_id",
-    adminMiddlewares,
-    listRegistrationsByEventController
-  );
-  app2.patch(
-    "/registrations/:registration_id/approve",
-    adminMiddlewares,
-    validateRegistrationController
-  );
   app2.post(
     "/registrations/event/:event_id",
     participantMiddlewares,
@@ -1757,12 +1831,18 @@ async function registrationsRoutes(app2) {
   );
 }
 
+// src/modules/event-registrations/http/routes/index.ts
+async function registrationsRoutes(app2) {
+  app2.register(adminRegistrationsRoutes);
+  app2.register(participantRegistrationsRoutes);
+}
+
 // src/shared/lib/multer.ts
 var import_fastify_multer2 = __toESM(require("fastify-multer"));
 var multer2 = (0, import_fastify_multer2.default)(upload_default.multer);
 
 // src/modules/payments/http/controllers/create-payment-controller.ts
-var import_zod19 = require("zod");
+var import_zod20 = require("zod");
 
 // src/modules/payments/repositories/prisma/prisma-payments-repository.ts
 var PrismaPaymentsRepository = class {
@@ -1856,17 +1936,17 @@ function makeCreatePaymentUseCase() {
 
 // src/modules/payments/http/controllers/create-payment-controller.ts
 async function createPaymentController(request, reply) {
-  const paramsSchema = import_zod19.z.object({
-    event_registration_id: import_zod19.z.string().uuid()
+  const paramsSchema = import_zod20.z.object({
+    event_registration_id: import_zod20.z.string().uuid()
   }).strict();
-  const bodySchema = import_zod19.z.object({
-    payment_method: import_zod19.z.enum([
+  const bodySchema = import_zod20.z.object({
+    payment_method: import_zod20.z.enum([
       "PIX",
       "DINHEIRO",
       "CART\xC3O DE D\xC9BITO",
       "CART\xC3O DE CR\xC9DITO"
     ]),
-    price: import_zod19.z.coerce.number().positive()
+    price: import_zod20.z.coerce.number().positive()
   }).strict();
   const user_id = request.user.sub;
   const file = request.file;
@@ -1884,7 +1964,7 @@ async function createPaymentController(request, reply) {
 }
 
 // src/modules/payments/http/controllers/update-payment-status-controller.ts
-var import_zod20 = require("zod");
+var import_zod21 = require("zod");
 
 // src/modules/payments/use-cases/update-payment-status-use-case.ts
 var UpdatePaymentStatusUseCase = class {
@@ -1914,8 +1994,8 @@ function makeUpdatePaymentStatusUseCase() {
 
 // src/modules/payments/http/controllers/update-payment-status-controller.ts
 async function updatePaymentStatusController(request, reply) {
-  const paramsSchema = import_zod20.z.object({
-    id: import_zod20.z.string().uuid()
+  const paramsSchema = import_zod21.z.object({
+    id: import_zod21.z.string().uuid()
   }).strict();
   const { id } = paramsSchema.parse(request.params);
   const updatePayment = makeUpdatePaymentStatusUseCase();
@@ -2013,7 +2093,7 @@ async function adminParticipantsRoutes(app2) {
 }
 
 // src/modules/participants/http/controllers/update-participant-controller.ts
-var import_zod21 = require("zod");
+var import_zod22 = require("zod");
 
 // src/modules/participants/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError5 = class extends AppError {
@@ -2094,18 +2174,18 @@ function makeUpdateParticipantUseCase() {
 
 // src/modules/participants/http/controllers/update-participant-controller.ts
 async function updateParticipantController(request, reply) {
-  const bodySchema = import_zod21.z.object({
-    full_name: import_zod21.z.string().min(5).optional(),
-    phone_number: import_zod21.z.string().optional(),
-    birthdate: import_zod21.z.coerce.date().optional(),
-    document_number: import_zod21.z.string().optional(),
-    document_type: import_zod21.z.enum(["CPF", "RG"]).optional(),
-    guardian_name: import_zod21.z.string().optional().optional(),
-    guardian_phone_number: import_zod21.z.string().optional().optional(),
-    prayer_group: import_zod21.z.string().optional().optional(),
-    community_type: import_zod21.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
-    pcd_description: import_zod21.z.string().optional().optional(),
-    allergy_description: import_zod21.z.string().optional().optional()
+  const bodySchema = import_zod22.z.object({
+    full_name: import_zod22.z.string().min(5).optional(),
+    phone_number: import_zod22.z.string().optional(),
+    birthdate: import_zod22.z.coerce.date().optional(),
+    document_number: import_zod22.z.string().optional(),
+    document_type: import_zod22.z.enum(["CPF", "RG"]).optional(),
+    guardian_name: import_zod22.z.string().optional().optional(),
+    guardian_phone_number: import_zod22.z.string().optional().optional(),
+    prayer_group: import_zod22.z.string().optional().optional(),
+    community_type: import_zod22.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
+    pcd_description: import_zod22.z.string().optional().optional(),
+    allergy_description: import_zod22.z.string().optional().optional()
   }).strict();
   const user_id = request.user.sub;
   const {
@@ -2140,7 +2220,7 @@ async function updateParticipantController(request, reply) {
 }
 
 // src/modules/participants/http/controllers/create-participant-controller.ts
-var import_zod22 = require("zod");
+var import_zod23 = require("zod");
 
 // src/modules/participants/use-cases/create-participant-use-case.ts
 var CreateParticipantUseCase = class {
@@ -2203,18 +2283,18 @@ function makeCreateParticipantUseCase() {
 
 // src/modules/participants/http/controllers/create-participant-controller.ts
 async function createParticipantController(request, reply) {
-  const bodySchema = import_zod22.z.object({
-    full_name: import_zod22.z.string().min(5),
-    phone_number: import_zod22.z.string(),
-    birthdate: import_zod22.z.coerce.date(),
-    document_number: import_zod22.z.string(),
-    document_type: import_zod22.z.enum(["CPF", "RG"]),
-    guardian_name: import_zod22.z.string().optional(),
-    guardian_phone_number: import_zod22.z.string().optional(),
-    prayer_group: import_zod22.z.string().optional(),
-    community_type: import_zod22.z.enum(["VIDA", "ALIAN\xC7A"]).optional(),
-    pcd_description: import_zod22.z.string().optional(),
-    allergy_description: import_zod22.z.string().optional()
+  const bodySchema = import_zod23.z.object({
+    full_name: import_zod23.z.string().min(5),
+    phone_number: import_zod23.z.string(),
+    birthdate: import_zod23.z.coerce.date(),
+    document_number: import_zod23.z.string(),
+    document_type: import_zod23.z.enum(["CPF", "RG"]),
+    guardian_name: import_zod23.z.string().optional(),
+    guardian_phone_number: import_zod23.z.string().optional(),
+    prayer_group: import_zod23.z.string().optional(),
+    community_type: import_zod23.z.enum(["VIDA", "ALIAN\xC7A"]).optional(),
+    pcd_description: import_zod23.z.string().optional(),
+    allergy_description: import_zod23.z.string().optional()
   }).strict();
   const user_id = request.user.sub;
   const {
@@ -2299,7 +2379,7 @@ async function userParticipantsRoutes(app2) {
 }
 
 // src/modules/participants/http/controllers/register-participanting-user-controller.ts
-var import_zod23 = require("zod");
+var import_zod24 = require("zod");
 
 // src/modules/participants/use-cases/register-participanting-user-and-address-use-case.ts
 var import_bcryptjs3 = require("bcryptjs");
@@ -2389,29 +2469,29 @@ function makeRegisterParticipantUserAndAddressUseCase() {
 
 // src/modules/participants/http/controllers/register-participanting-user-controller.ts
 async function registerParticipantingUserController(request, reply) {
-  const bodySchema = import_zod23.z.object({
-    name: import_zod23.z.string(),
-    email: import_zod23.z.string().email(),
-    password: import_zod23.z.string().min(8),
-    password_confirmation: import_zod23.z.string().min(8),
-    street: import_zod23.z.string(),
-    street_number: import_zod23.z.string(),
-    complement: import_zod23.z.string().optional(),
-    zip_code: import_zod23.z.string(),
-    district: import_zod23.z.string(),
-    city: import_zod23.z.string(),
-    state: import_zod23.z.string(),
-    full_name: import_zod23.z.string().min(5),
-    phone_number: import_zod23.z.string(),
-    birthdate: import_zod23.z.coerce.date(),
-    document_number: import_zod23.z.string(),
-    document_type: import_zod23.z.enum(["CPF", "RG"]),
-    guardian_name: import_zod23.z.string().optional().optional(),
-    guardian_phone_number: import_zod23.z.string().optional().optional(),
-    prayer_group: import_zod23.z.string().optional().optional(),
-    community_type: import_zod23.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
-    pcd_description: import_zod23.z.string().optional().optional(),
-    allergy_description: import_zod23.z.string().optional().optional()
+  const bodySchema = import_zod24.z.object({
+    name: import_zod24.z.string(),
+    email: import_zod24.z.string().email(),
+    password: import_zod24.z.string().min(8),
+    password_confirmation: import_zod24.z.string().min(8),
+    street: import_zod24.z.string(),
+    street_number: import_zod24.z.string(),
+    complement: import_zod24.z.string().optional(),
+    zip_code: import_zod24.z.string(),
+    district: import_zod24.z.string(),
+    city: import_zod24.z.string(),
+    state: import_zod24.z.string(),
+    full_name: import_zod24.z.string().min(5),
+    phone_number: import_zod24.z.string(),
+    birthdate: import_zod24.z.coerce.date(),
+    document_number: import_zod24.z.string(),
+    document_type: import_zod24.z.enum(["CPF", "RG"]),
+    guardian_name: import_zod24.z.string().optional().optional(),
+    guardian_phone_number: import_zod24.z.string().optional().optional(),
+    prayer_group: import_zod24.z.string().optional().optional(),
+    community_type: import_zod24.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
+    pcd_description: import_zod24.z.string().optional().optional(),
+    allergy_description: import_zod24.z.string().optional().optional()
   }).strict().refine((data) => data.password === data.password_confirmation, {
     message: "Passwords don't match",
     path: ["password_confirmation"]
@@ -2493,9 +2573,9 @@ async function appRoutes(app2) {
 }
 
 // src/shared/errors/error-handler.ts
-var import_zod24 = require("zod");
+var import_zod25 = require("zod");
 function errorHandler(error, _, reply) {
-  if (error instanceof import_zod24.ZodError) {
+  if (error instanceof import_zod25.ZodError) {
     return reply.status(400).send({
       message: "Validation error.",
       issues: error.format()

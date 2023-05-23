@@ -70,7 +70,8 @@ var PrismaRegistrationsRepository = class {
       where: { event_id },
       include: {
         user: { select: { email: true, participant: true } },
-        payment: true
+        payment: true,
+        event: { include: { addresses: true } }
       }
     });
     return registrations;

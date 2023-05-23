@@ -17,12 +17,34 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/modules/event-registrations/use-cases/factories/make-create-registration-use-case.ts
-var make_create_registration_use_case_exports = {};
-__export(make_create_registration_use_case_exports, {
-  makeCreateEventRegistrationUseCase: () => makeCreateEventRegistrationUseCase
+// src/modules/event-registrations/http/routes/participant-registrations-routes.ts
+var participant_registrations_routes_exports = {};
+__export(participant_registrations_routes_exports, {
+  participantRegistrationsRoutes: () => participantRegistrationsRoutes
 });
-module.exports = __toCommonJS(make_create_registration_use_case_exports);
+module.exports = __toCommonJS(participant_registrations_routes_exports);
+
+// src/shared/infra/http/middlewares/verify-user-role.ts
+function verifyUserRole(roleToVerify) {
+  return async (request, reply) => {
+    const { role } = request.user;
+    if (role !== roleToVerify) {
+      return reply.status(401).send({ message: "Unauthorized." });
+    }
+  };
+}
+
+// src/shared/infra/http/middlewares/verify-jwt.ts
+async function verifyJWT(request, reply) {
+  try {
+    await request.jwtVerify();
+  } catch (err) {
+    return reply.status(401).send({ message: "Unauthorized." });
+  }
+}
+
+// src/modules/event-registrations/http/controllers/create-registration-controller.ts
+var import_zod2 = require("zod");
 
 // src/shared/env/index.ts
 var import_config = require("dotenv/config");
@@ -244,7 +266,88 @@ function makeCreateEventRegistrationUseCase() {
   );
   return useCase;
 }
+
+// src/modules/event-registrations/http/controllers/create-registration-controller.ts
+async function createRegistrationController(request, reply) {
+  const paramsSchema = import_zod2.z.object({
+    event_id: import_zod2.z.string().uuid()
+  }).strict();
+  const bodySchema = import_zod2.z.object({
+    credential_name: import_zod2.z.string().min(5).max(18),
+    event_source: import_zod2.z.string().optional(),
+    transportation_mode: import_zod2.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
+    accepted_the_terms: import_zod2.z.boolean().refine((value) => value === true, {
+      message: "User must accept the terms",
+      path: ["accepted_the_terms"]
+    })
+  }).strict();
+  const user_id = request.user.sub;
+  const { event_id } = paramsSchema.parse(request.params);
+  const {
+    event_source,
+    transportation_mode,
+    accepted_the_terms,
+    credential_name
+  } = bodySchema.parse(request.body);
+  const createEventRegistration = makeCreateEventRegistrationUseCase();
+  const { registration } = await createEventRegistration.execute({
+    user_id,
+    event_id,
+    event_source,
+    transportation_mode,
+    accepted_the_terms,
+    credential_name
+  });
+  return reply.status(200).send({ registration });
+}
+
+// src/modules/event-registrations/use-cases/list-registrations-by-user-use-case.ts
+var ListRegistrationsByUserUseCase = class {
+  constructor(registrationsRepository) {
+    this.registrationsRepository = registrationsRepository;
+  }
+  async execute({ user_id }) {
+    const registrations = await this.registrationsRepository.findManyByUser(
+      user_id
+    );
+    return { registrations };
+  }
+};
+
+// src/modules/event-registrations/use-cases/factories/make-list-registrations-by-user-use-case.ts
+function makeListRegistrationsByUserUseCase() {
+  const registrationsRepository = new PrismaRegistrationsRepository();
+  const useCase = new ListRegistrationsByUserUseCase(registrationsRepository);
+  return useCase;
+}
+
+// src/modules/event-registrations/http/controllers/list-registrations-by-user-controller.ts
+async function listRegistrationsByUserController(request, reply) {
+  const user_id = request.user.sub;
+  const listRegistrationsByUser = makeListRegistrationsByUserUseCase();
+  const { registrations } = await listRegistrationsByUser.execute({
+    user_id
+  });
+  return reply.status(200).send({ registrations });
+}
+
+// src/modules/event-registrations/http/routes/participant-registrations-routes.ts
+async function participantRegistrationsRoutes(app) {
+  const participantMiddlewares = {
+    onRequest: [verifyJWT, verifyUserRole("PARTICIPANT")]
+  };
+  app.post(
+    "/registrations/event/:event_id",
+    participantMiddlewares,
+    createRegistrationController
+  );
+  app.get(
+    "/registrations/my",
+    participantMiddlewares,
+    listRegistrationsByUserController
+  );
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  makeCreateEventRegistrationUseCase
+  participantRegistrationsRoutes
 });
