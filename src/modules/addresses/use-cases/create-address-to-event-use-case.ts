@@ -2,7 +2,7 @@ import { Address } from '@prisma/client';
 
 import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { AddressesRepository } from '../repositories/addresses-repository';
-import { AlreadyHasAddressError, UserNotFoundError } from './errors';
+import { AlreadyHasAddressError, ResourceNotFoundError } from './errors';
 
 interface IRequest {
   event_id: string;
@@ -37,7 +37,7 @@ export class CreateAddressToEventUseCase {
   }: IRequest): Promise<IResponse> {
     const event = await this.eventsRepository.findByIdWithRelations(event_id);
 
-    if (!event) throw new UserNotFoundError();
+    if (!event) throw new ResourceNotFoundError('User');
 
     if (event?.addresses && event.addresses.length > 0)
       throw new AlreadyHasAddressError();
