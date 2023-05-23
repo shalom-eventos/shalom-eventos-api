@@ -15,6 +15,7 @@ export async function updateEventController(
 
   const bodySchema = z
     .object({
+      slug: z.string().optional(),
       title: z.string().optional(),
       description: z.string().optional(),
       start_date: z.coerce.date().optional(),

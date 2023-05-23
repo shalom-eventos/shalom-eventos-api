@@ -6,6 +6,7 @@ export class PrismaUsersRepository implements UsersRepository {
   async findById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
+      include: { participant: true },
     });
 
     return user;
@@ -22,6 +23,15 @@ export class PrismaUsersRepository implements UsersRepository {
   async create(data: Prisma.UserCreateInput) {
     const user = await prisma.user.create({
       data,
+    });
+
+    return user;
+  }
+
+  async findByIdWithRelations(id: string) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { addresses: true },
     });
 
     return user;

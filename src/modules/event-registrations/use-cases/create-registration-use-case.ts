@@ -4,24 +4,14 @@ import { EventsRepository } from '@/modules/events/repositories/events-repositor
 import { UsersRepository } from '@/modules/users/repositories/users-repository';
 
 import { RegistrationsRepository } from '../repositories/registrations-repository';
-import { EventNotFoundError, UserNotFoundError } from './errors';
+import { ResourceNotFoundError } from './errors';
 import { UserAlreadyRegisteredError } from './errors/user-already-registered-error';
 
 interface IRequest {
   user_id: string;
   event_id: string;
-  full_name: string;
-  phone_number: string;
-  age: number;
-  document_number: string;
-  document_type: string;
-  guardian_name?: string;
-  guardian_phone_number?: string;
-  prayer_group?: string;
+  credential_name: string;
   event_source?: string;
-  community_type?: string;
-  pcd_description?: string;
-  allergy_description?: string;
   transportation_mode: string;
   accepted_the_terms: boolean;
 }
@@ -40,26 +30,16 @@ export class CreateEventRegistrationUseCase {
   async execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
     accepted_the_terms,
+    credential_name,
   }: IRequest): Promise<IResponse> {
     const eventExists = await this.eventsRepository.findById(event_id);
-    if (!eventExists) throw new EventNotFoundError();
+    if (!eventExists) throw new ResourceNotFoundError('Event');
 
     const userExists = await this.usersRepository.findById(user_id);
-    if (!userExists) throw new UserNotFoundError();
+    if (!userExists) throw new ResourceNotFoundError('User');
 
     const registrationExtist =
       await this.registrationsRepository.findByEventAndUser(event_id, user_id);
@@ -68,20 +48,10 @@ export class CreateEventRegistrationUseCase {
     const registration = await this.registrationsRepository.create({
       user_id,
       event_id,
-      full_name,
-      phone_number,
-      age,
-      document_number,
-      document_type,
-      guardian_name,
-      guardian_phone_number,
-      prayer_group,
       event_source,
-      community_type,
-      pcd_description,
-      allergy_description,
       transportation_mode,
       accepted_the_terms,
+      credential_name,
     });
 
     return { registration };

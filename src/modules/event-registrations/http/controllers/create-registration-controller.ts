@@ -14,18 +14,8 @@ export async function createRegistrationController(
 
   const bodySchema = z
     .object({
-      full_name: z.string().min(5),
-      phone_number: z.string(),
-      age: z.number().int().positive(),
-      document_number: z.string(),
-      document_type: z.enum(['CPF', 'RG']),
-      guardian_name: z.string().optional(),
-      guardian_phone_number: z.string().optional(),
-      prayer_group: z.string().optional(),
+      credential_name: z.string().min(5).max(18),
       event_source: z.string().optional(),
-      community_type: z.enum(['VIDA', 'ALIANÇA']).optional(),
-      pcd_description: z.string().optional(),
-      allergy_description: z.string().optional(),
       transportation_mode: z.enum(['TRANSPORTE PRÓPRIO', 'ÔNIBUS']),
       accepted_the_terms: z.boolean().refine((value) => value === true, {
         message: 'User must accept the terms',
@@ -37,20 +27,10 @@ export async function createRegistrationController(
   const user_id = request.user.sub;
   const { event_id } = paramsSchema.parse(request.params);
   const {
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
     accepted_the_terms,
+    credential_name,
   } = bodySchema.parse(request.body);
 
   const createEventRegistration = makeCreateEventRegistrationUseCase();
@@ -58,20 +38,10 @@ export async function createRegistrationController(
   const { registration } = await createEventRegistration.execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
     accepted_the_terms,
+    credential_name,
   });
 
   return reply.status(200).send({ registration });

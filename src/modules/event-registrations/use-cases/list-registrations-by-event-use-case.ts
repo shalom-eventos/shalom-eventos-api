@@ -1,6 +1,5 @@
 import { EventRegistration } from '@prisma/client';
 
-import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { RegistrationsRepository } from '../repositories/registrations-repository';
 
 interface IRequest {
