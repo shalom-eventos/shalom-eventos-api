@@ -50,7 +50,8 @@ var prisma = new import_client.PrismaClient({
 var PrismaUsersRepository = class {
   async findById(id) {
     const user = await prisma.user.findUnique({
-      where: { id }
+      where: { id },
+      include: { participant: true }
     });
     return user;
   }
@@ -63,6 +64,13 @@ var PrismaUsersRepository = class {
   async create(data) {
     const user = await prisma.user.create({
       data
+    });
+    return user;
+  }
+  async findByIdWithRelations(id) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { addresses: true }
     });
     return user;
   }

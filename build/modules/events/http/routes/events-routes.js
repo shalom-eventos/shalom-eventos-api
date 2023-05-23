@@ -66,6 +66,12 @@ var PrismaEventsRepository = class {
     });
     return event;
   }
+  async findBySlug(slug) {
+    const event = await prisma.event.findUnique({
+      where: { slug }
+    });
+    return event;
+  }
   async findMany() {
     const events = await prisma.event.findMany({});
     return events;
@@ -110,6 +116,23 @@ var InvalidDateIntervalError = class extends AppError {
   }
 };
 
+// src/shared/utils/generate-slug.ts
+var generateSlug = ({
+  keyword,
+  separator = "-",
+  withHash = false,
+  hash
+}) => {
+  const slug = `${keyword.toLowerCase()}`.replace(
+    /([^a-z0-9 ]+)|\s/gi,
+    separator
+  );
+  if (!withHash)
+    return slug;
+  const hashCode = hash ?? String((/* @__PURE__ */ new Date()).getTime()).substring(8);
+  return slug + separator + hashCode;
+};
+
 // src/modules/events/use-cases/create-event-use-case.ts
 var CreateEventUseCase = class {
   constructor(eventsRepository) {
@@ -124,7 +147,21 @@ var CreateEventUseCase = class {
     const endDate = end_date ? end_date : (0, import_dayjs.default)(start_date).endOf("date").toDate();
     if ((0, import_dayjs.default)(start_date).isAfter(end_date))
       throw new InvalidDateIntervalError();
+    let slug = generateSlug({ keyword: title });
+    for (let i = 1; i < 1e3; i++) {
+      const slugExists = await this.eventsRepository.findBySlug(slug);
+      if (slugExists) {
+        slug = generateSlug({
+          keyword: title,
+          withHash: true,
+          hash: String(i)
+        });
+      } else {
+        break;
+      }
+    }
     const event = await this.eventsRepository.create({
+      slug,
       title,
       description,
       start_date,
@@ -227,11 +264,20 @@ var import_zod4 = require("zod");
 
 // src/modules/events/use-cases/update-event-use-case.ts
 var import_dayjs2 = __toESM(require("dayjs"));
+
+// src/modules/events/use-cases/errors/slug-exists-error.ts
+var SlugExistsError = class extends AppError {
+  constructor() {
+    super("Slug already exists.", 409);
+  }
+};
+
+// src/modules/events/use-cases/update-event-use-case.ts
 var UpdateEventUseCase = class {
   constructor(eventsRepository) {
     this.eventsRepository = eventsRepository;
   }
-  async execute(id, { title, description, start_date, end_date }) {
+  async execute(id, { slug, title, description, start_date, end_date }) {
     const event = await this.eventsRepository.findById(id);
     if (!event)
       throw new ResourceNotFoundError();
@@ -253,6 +299,13 @@ var UpdateEventUseCase = class {
         throw new InvalidDateIntervalError();
       event.end_date = end_date;
     }
+    if (slug) {
+      const slugHashed = generateSlug({ keyword: slug });
+      const slugExists = await this.eventsRepository.findBySlug(slugHashed);
+      if (slugExists && slugHashed !== event.slug)
+        throw new SlugExistsError();
+      event.slug = slugHashed;
+    }
     await this.eventsRepository.save(event);
     return { event };
   }
@@ -271,6 +324,7 @@ async function updateEventController(request, reply) {
     id: import_zod4.z.string().uuid()
   }).strict();
   const bodySchema = import_zod4.z.object({
+    slug: import_zod4.z.string().optional(),
     title: import_zod4.z.string().optional(),
     description: import_zod4.z.string().optional(),
     start_date: import_zod4.z.coerce.date().optional(),

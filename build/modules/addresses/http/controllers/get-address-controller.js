@@ -49,7 +49,7 @@ var prisma = new import_client.PrismaClient({
 // src/modules/addresses/repositories/prisma/prisma-addresses-repository.ts
 var PrismaAddressesRepository = class {
   async findById(id) {
-    const address = await prisma.address.findUnique({
+    const address = await prisma.address.findFirst({
       where: { id }
     });
     return address;
@@ -67,6 +67,24 @@ var PrismaAddressesRepository = class {
     });
     return address;
   }
+  async findManyByUser(user_id) {
+    const addresses = await prisma.address.findMany({
+      where: { users: { some: { id: user_id } } }
+    });
+    return addresses;
+  }
+  async findManyByEvent(event_id) {
+    const addresses = await prisma.address.findMany({
+      where: { events: { some: { id: event_id } } }
+    });
+    return addresses;
+  }
+  async findByEvent(address_id, event_id) {
+    const address = await prisma.address.findFirst({
+      where: { id: address_id, events: { every: { id: event_id } } }
+    });
+    return address;
+  }
 };
 
 // src/shared/errors/app-error.ts
@@ -79,8 +97,8 @@ var AppError = class {
 
 // src/modules/addresses/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError = class extends AppError {
-  constructor() {
-    super("Resource not found.", 404);
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -92,7 +110,7 @@ var GetAddressUseCase = class {
   async execute({ id }) {
     const address = await this.addressesRepository.findById(id);
     if (!address)
-      throw new ResourceNotFoundError();
+      throw new ResourceNotFoundError("Event");
     return { address };
   }
 };

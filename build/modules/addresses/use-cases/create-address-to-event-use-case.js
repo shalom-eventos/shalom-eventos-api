@@ -41,8 +41,8 @@ var AlreadyHasAddressError = class extends AppError {
 
 // src/modules/addresses/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError = class extends AppError {
-  constructor() {
-    super("Resource not found.", 404);
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -64,7 +64,7 @@ var CreateAddressToEventUseCase = class {
   }) {
     const event = await this.eventsRepository.findByIdWithRelations(event_id);
     if (!event)
-      throw new ResourceNotFoundError();
+      throw new ResourceNotFoundError("User");
     if (event?.addresses && event.addresses.length > 0)
       throw new AlreadyHasAddressError();
     const address = await this.addressesRepository.create({

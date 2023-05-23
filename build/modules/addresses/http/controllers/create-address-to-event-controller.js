@@ -54,6 +54,12 @@ var PrismaEventsRepository = class {
     });
     return event;
   }
+  async findBySlug(slug) {
+    const event = await prisma.event.findUnique({
+      where: { slug }
+    });
+    return event;
+  }
   async findMany() {
     const events = await prisma.event.findMany({});
     return events;
@@ -83,7 +89,7 @@ var PrismaEventsRepository = class {
 // src/modules/addresses/repositories/prisma/prisma-addresses-repository.ts
 var PrismaAddressesRepository = class {
   async findById(id) {
-    const address = await prisma.address.findUnique({
+    const address = await prisma.address.findFirst({
       where: { id }
     });
     return address;
@@ -98,6 +104,24 @@ var PrismaAddressesRepository = class {
     const address = await prisma.address.update({
       where: { id: data.id },
       data
+    });
+    return address;
+  }
+  async findManyByUser(user_id) {
+    const addresses = await prisma.address.findMany({
+      where: { users: { some: { id: user_id } } }
+    });
+    return addresses;
+  }
+  async findManyByEvent(event_id) {
+    const addresses = await prisma.address.findMany({
+      where: { events: { some: { id: event_id } } }
+    });
+    return addresses;
+  }
+  async findByEvent(address_id, event_id) {
+    const address = await prisma.address.findFirst({
+      where: { id: address_id, events: { every: { id: event_id } } }
     });
     return address;
   }
@@ -120,8 +144,8 @@ var AlreadyHasAddressError = class extends AppError {
 
 // src/modules/addresses/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError = class extends AppError {
-  constructor() {
-    super("Resource not found.", 404);
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -143,7 +167,7 @@ var CreateAddressToEventUseCase = class {
   }) {
     const event = await this.eventsRepository.findByIdWithRelations(event_id);
     if (!event)
-      throw new ResourceNotFoundError();
+      throw new ResourceNotFoundError("User");
     if (event?.addresses && event.addresses.length > 0)
       throw new AlreadyHasAddressError();
     const address = await this.addressesRepository.create({

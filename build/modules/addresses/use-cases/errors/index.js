@@ -21,7 +21,8 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 var errors_exports = {};
 __export(errors_exports, {
   AlreadyHasAddressError: () => AlreadyHasAddressError,
-  ResourceNotFoundError: () => ResourceNotFoundError
+  ResourceNotFoundError: () => ResourceNotFoundError,
+  UserIsNotParticipantError: () => UserIsNotParticipantError
 });
 module.exports = __toCommonJS(errors_exports);
 
@@ -42,12 +43,20 @@ var AlreadyHasAddressError = class extends AppError {
 
 // src/modules/addresses/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError = class extends AppError {
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
+  }
+};
+
+// src/modules/addresses/use-cases/errors/user-is-not-participant-error.ts
+var UserIsNotParticipantError = class extends AppError {
   constructor() {
-    super("Resource not found.", 404);
+    super("User is not participant.", 403);
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   AlreadyHasAddressError,
-  ResourceNotFoundError
+  ResourceNotFoundError,
+  UserIsNotParticipantError
 });

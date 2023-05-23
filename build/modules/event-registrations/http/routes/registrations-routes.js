@@ -75,6 +75,12 @@ var PrismaEventsRepository = class {
     });
     return event;
   }
+  async findBySlug(slug) {
+    const event = await prisma.event.findUnique({
+      where: { slug }
+    });
+    return event;
+  }
   async findMany() {
     const events = await prisma.event.findMany({});
     return events;
@@ -124,14 +130,23 @@ var PrismaRegistrationsRepository = class {
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
-      include: { payment: true }
+      include: {
+        user: { select: { email: true, participant: true } },
+        payment: true
+      }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { user_id },
-      include: { event: { include: { addresses: true } }, payment: true }
+      include: {
+        user: {
+          select: { email: true, participant: true }
+        },
+        event: { include: { addresses: true } },
+        payment: true
+      }
     });
     return registrations;
   }
@@ -158,17 +173,10 @@ var AppError = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
-var EventNotFoundError = class extends AppError {
-  constructor() {
-    super("Event not found.", 404);
-  }
-};
-
-// src/modules/event-registrations/use-cases/errors/user-not-found-error.ts
-var UserNotFoundError = class extends AppError {
-  constructor() {
-    super("User not found.", 404);
+// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
+var ResourceNotFoundError = class extends AppError {
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -189,47 +197,27 @@ var CreateEventRegistrationUseCase = class {
   async execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
-      throw new EventNotFoundError();
+      throw new ResourceNotFoundError("Event");
     const userExists = await this.usersRepository.findById(user_id);
     if (!userExists)
-      throw new UserNotFoundError();
+      throw new ResourceNotFoundError("User");
     const registrationExtist = await this.registrationsRepository.findByEventAndUser(event_id, user_id);
     if (registrationExtist)
       throw new UserAlreadyRegisteredError();
     const registration = await this.registrationsRepository.create({
       user_id,
       event_id,
-      full_name,
-      phone_number,
-      age,
-      document_number,
-      document_type,
-      guardian_name,
-      guardian_phone_number,
-      prayer_group,
       event_source,
-      community_type,
-      pcd_description,
-      allergy_description,
       transportation_mode,
-      accepted_the_terms
+      accepted_the_terms,
+      credential_name
     });
     return { registration };
   }
@@ -239,7 +227,8 @@ var CreateEventRegistrationUseCase = class {
 var PrismaUsersRepository = class {
   async findById(id) {
     const user = await prisma.user.findUnique({
-      where: { id }
+      where: { id },
+      include: { participant: true }
     });
     return user;
   }
@@ -252,6 +241,13 @@ var PrismaUsersRepository = class {
   async create(data) {
     const user = await prisma.user.create({
       data
+    });
+    return user;
+  }
+  async findByIdWithRelations(id) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { addresses: true }
     });
     return user;
   }
@@ -276,18 +272,8 @@ async function createRegistrationController(request, reply) {
     event_id: import_zod2.z.string().uuid()
   }).strict();
   const bodySchema = import_zod2.z.object({
-    full_name: import_zod2.z.string().min(5),
-    phone_number: import_zod2.z.string(),
-    age: import_zod2.z.number().int().positive(),
-    document_number: import_zod2.z.string(),
-    document_type: import_zod2.z.enum(["CPF", "RG"]),
-    guardian_name: import_zod2.z.string().optional(),
-    guardian_phone_number: import_zod2.z.string().optional(),
-    prayer_group: import_zod2.z.string().optional(),
+    credential_name: import_zod2.z.string().min(5).max(18),
     event_source: import_zod2.z.string().optional(),
-    community_type: import_zod2.z.enum(["VIDA", "ALIAN\xC7A"]).optional(),
-    pcd_description: import_zod2.z.string().optional(),
-    allergy_description: import_zod2.z.string().optional(),
     transportation_mode: import_zod2.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
     accepted_the_terms: import_zod2.z.boolean().refine((value) => value === true, {
       message: "User must accept the terms",
@@ -297,39 +283,19 @@ async function createRegistrationController(request, reply) {
   const user_id = request.user.sub;
   const { event_id } = paramsSchema.parse(request.params);
   const {
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   } = bodySchema.parse(request.body);
   const createEventRegistration = makeCreateEventRegistrationUseCase();
   const { registration } = await createEventRegistration.execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   });
   return reply.status(200).send({ registration });
 }
@@ -415,7 +381,7 @@ var ValidateRegistrationUseCase = class {
       registration_id
     );
     if (!registration)
-      throw new EventNotFoundError();
+      throw new ResourceNotFoundError("Registration");
     if (registration.is_approved)
       return { registration };
     registration.is_approved = !registration.is_approved;
@@ -458,7 +424,7 @@ async function registrationsRoutes(app) {
     listRegistrationsByEventController
   );
   app.patch(
-    "/registrations/:registration_id/validate",
+    "/registrations/:registration_id/approve",
     adminMiddlewares,
     validateRegistrationController
   );

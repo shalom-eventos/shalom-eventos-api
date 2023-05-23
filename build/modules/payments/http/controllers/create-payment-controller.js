@@ -120,14 +120,23 @@ var PrismaRegistrationsRepository = class {
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
-      include: { payment: true }
+      include: {
+        user: { select: { email: true, participant: true } },
+        payment: true
+      }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { user_id },
-      include: { event: { include: { addresses: true } }, payment: true }
+      include: {
+        user: {
+          select: { email: true, participant: true }
+        },
+        event: { include: { addresses: true } },
+        payment: true
+      }
     });
     return registrations;
   }

@@ -62,7 +62,8 @@ var prisma = new import_client.PrismaClient({
 var PrismaUsersRepository = class {
   async findById(id) {
     const user = await prisma.user.findUnique({
-      where: { id }
+      where: { id },
+      include: { participant: true }
     });
     return user;
   }
@@ -75,6 +76,13 @@ var PrismaUsersRepository = class {
   async create(data) {
     const user = await prisma.user.create({
       data
+    });
+    return user;
+  }
+  async findByIdWithRelations(id) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { addresses: true }
     });
     return user;
   }
@@ -307,6 +315,12 @@ var PrismaEventsRepository = class {
     });
     return event;
   }
+  async findBySlug(slug) {
+    const event = await prisma.event.findUnique({
+      where: { slug }
+    });
+    return event;
+  }
   async findMany() {
     const events = await prisma.event.findMany({});
     return events;
@@ -343,6 +357,23 @@ var InvalidDateIntervalError = class extends AppError {
   }
 };
 
+// src/shared/utils/generate-slug.ts
+var generateSlug = ({
+  keyword,
+  separator = "-",
+  withHash = false,
+  hash: hash3
+}) => {
+  const slug = `${keyword.toLowerCase()}`.replace(
+    /([^a-z0-9 ]+)|\s/gi,
+    separator
+  );
+  if (!withHash)
+    return slug;
+  const hashCode = hash3 ?? String((/* @__PURE__ */ new Date()).getTime()).substring(8);
+  return slug + separator + hashCode;
+};
+
 // src/modules/events/use-cases/create-event-use-case.ts
 var CreateEventUseCase = class {
   constructor(eventsRepository) {
@@ -357,7 +388,21 @@ var CreateEventUseCase = class {
     const endDate = end_date ? end_date : (0, import_dayjs.default)(start_date).endOf("date").toDate();
     if ((0, import_dayjs.default)(start_date).isAfter(end_date))
       throw new InvalidDateIntervalError();
+    let slug = generateSlug({ keyword: title });
+    for (let i = 1; i < 1e3; i++) {
+      const slugExists = await this.eventsRepository.findBySlug(slug);
+      if (slugExists) {
+        slug = generateSlug({
+          keyword: title,
+          withHash: true,
+          hash: String(i)
+        });
+      } else {
+        break;
+      }
+    }
     const event = await this.eventsRepository.create({
+      slug,
       title,
       description,
       start_date,
@@ -451,11 +496,20 @@ var import_zod6 = require("zod");
 
 // src/modules/events/use-cases/update-event-use-case.ts
 var import_dayjs2 = __toESM(require("dayjs"));
+
+// src/modules/events/use-cases/errors/slug-exists-error.ts
+var SlugExistsError = class extends AppError {
+  constructor() {
+    super("Slug already exists.", 409);
+  }
+};
+
+// src/modules/events/use-cases/update-event-use-case.ts
 var UpdateEventUseCase = class {
   constructor(eventsRepository) {
     this.eventsRepository = eventsRepository;
   }
-  async execute(id, { title, description, start_date, end_date }) {
+  async execute(id, { slug, title, description, start_date, end_date }) {
     const event = await this.eventsRepository.findById(id);
     if (!event)
       throw new ResourceNotFoundError2();
@@ -477,6 +531,13 @@ var UpdateEventUseCase = class {
         throw new InvalidDateIntervalError();
       event.end_date = end_date;
     }
+    if (slug) {
+      const slugHashed = generateSlug({ keyword: slug });
+      const slugExists = await this.eventsRepository.findBySlug(slugHashed);
+      if (slugExists && slugHashed !== event.slug)
+        throw new SlugExistsError();
+      event.slug = slugHashed;
+    }
     await this.eventsRepository.save(event);
     return { event };
   }
@@ -495,6 +556,7 @@ async function updateEventController(request, reply) {
     id: import_zod6.z.string().uuid()
   }).strict();
   const bodySchema = import_zod6.z.object({
+    slug: import_zod6.z.string().optional(),
     title: import_zod6.z.string().optional(),
     description: import_zod6.z.string().optional(),
     start_date: import_zod6.z.coerce.date().optional(),
@@ -579,13 +641,13 @@ async function tokenRoutes(app) {
   app.patch("/token/refresh", refresh);
 }
 
-// src/modules/addresses/http/controllers/update-address-controller.ts
+// src/modules/addresses/http/controllers/update-address-to-event-controller.ts
 var import_zod7 = require("zod");
 
 // src/modules/addresses/repositories/prisma/prisma-addresses-repository.ts
 var PrismaAddressesRepository = class {
   async findById(id) {
-    const address = await prisma.address.findUnique({
+    const address = await prisma.address.findFirst({
       where: { id }
     });
     return address;
@@ -603,21 +665,55 @@ var PrismaAddressesRepository = class {
     });
     return address;
   }
+  async findManyByUser(user_id) {
+    const addresses = await prisma.address.findMany({
+      where: { users: { some: { id: user_id } } }
+    });
+    return addresses;
+  }
+  async findManyByEvent(event_id) {
+    const addresses = await prisma.address.findMany({
+      where: { events: { some: { id: event_id } } }
+    });
+    return addresses;
+  }
+  async findByEvent(address_id, event_id) {
+    const address = await prisma.address.findFirst({
+      where: { id: address_id, events: { every: { id: event_id } } }
+    });
+    return address;
+  }
+};
+
+// src/modules/addresses/use-cases/errors/already-has-address-error.ts
+var AlreadyHasAddressError = class extends AppError {
+  constructor() {
+    super("Resource already has a registered address", 409);
+  }
 };
 
 // src/modules/addresses/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError3 = class extends AppError {
-  constructor() {
-    super("Resource not found.", 404);
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
-// src/modules/addresses/use-cases/update-address-use-case.ts
-var UpdateAddressUseCase = class {
+// src/modules/addresses/use-cases/errors/user-is-not-participant-error.ts
+var UserIsNotParticipantError = class extends AppError {
+  constructor() {
+    super("User is not participant.", 403);
+  }
+};
+
+// src/modules/addresses/use-cases/update-address-to-event-use-case.ts
+var UpdateAddressToEventUseCase = class {
   constructor(addressesRepository) {
     this.addressesRepository = addressesRepository;
   }
-  async execute(id, {
+  async execute({
+    event_id,
+    address_id,
     street,
     street_number,
     complement,
@@ -626,9 +722,12 @@ var UpdateAddressUseCase = class {
     city,
     state
   }) {
-    const address = await this.addressesRepository.findById(id);
+    const address = await this.addressesRepository.findByEvent(
+      address_id,
+      event_id
+    );
     if (!address)
-      throw new ResourceNotFoundError3();
+      throw new ResourceNotFoundError3("Address");
     if (street)
       address.street = street;
     if (street_number)
@@ -648,17 +747,18 @@ var UpdateAddressUseCase = class {
   }
 };
 
-// src/modules/addresses/use-cases/factories/make-update-address-use-case.ts
-function makeUpdateAddressUseCase() {
+// src/modules/addresses/use-cases/factories/make-update-address-to-event-use-case.ts
+function makeUpdateAddressToEventUseCase() {
   const addressesRepository = new PrismaAddressesRepository();
-  const useCase = new UpdateAddressUseCase(addressesRepository);
+  const useCase = new UpdateAddressToEventUseCase(addressesRepository);
   return useCase;
 }
 
-// src/modules/addresses/http/controllers/update-address-controller.ts
-async function updateAddressController(request, reply) {
+// src/modules/addresses/http/controllers/update-address-to-event-controller.ts
+async function updateAddressToEventController(request, reply) {
   const paramsSchema = import_zod7.z.object({
-    id: import_zod7.z.string().uuid()
+    address_id: import_zod7.z.string().uuid(),
+    event_id: import_zod7.z.string().uuid()
   }).strict();
   const bodySchema = import_zod7.z.object({
     street: import_zod7.z.string().optional(),
@@ -669,10 +769,12 @@ async function updateAddressController(request, reply) {
     city: import_zod7.z.string().optional(),
     state: import_zod7.z.string().optional()
   }).strict();
-  const { id } = paramsSchema.parse(request.params);
+  const { address_id, event_id } = paramsSchema.parse(request.params);
   const { street, street_number, complement, zip_code, district, city, state } = bodySchema.parse(request.body);
-  const updateAddress = makeUpdateAddressUseCase();
-  const { address } = await updateAddress.execute(id, {
+  const updateAddress = makeUpdateAddressToEventUseCase();
+  const { address } = await updateAddress.execute({
+    address_id,
+    event_id,
     street,
     street_number,
     complement,
@@ -686,13 +788,6 @@ async function updateAddressController(request, reply) {
 
 // src/modules/addresses/http/controllers/create-address-to-event-controller.ts
 var import_zod8 = require("zod");
-
-// src/modules/addresses/use-cases/errors/already-has-address-error.ts
-var AlreadyHasAddressError = class extends AppError {
-  constructor() {
-    super("Resource already has a registered address", 409);
-  }
-};
 
 // src/modules/addresses/use-cases/create-address-to-event-use-case.ts
 var CreateAddressToEventUseCase = class {
@@ -712,7 +807,7 @@ var CreateAddressToEventUseCase = class {
   }) {
     const event = await this.eventsRepository.findByIdWithRelations(event_id);
     if (!event)
-      throw new ResourceNotFoundError3();
+      throw new ResourceNotFoundError3("User");
     if (event?.addresses && event.addresses.length > 0)
       throw new AlreadyHasAddressError();
     const address = await this.addressesRepository.create({
@@ -785,7 +880,7 @@ var GetAddressUseCase = class {
   async execute({ id }) {
     const address = await this.addressesRepository.findById(id);
     if (!address)
-      throw new ResourceNotFoundError3();
+      throw new ResourceNotFoundError3("Event");
     return { address };
   }
 };
@@ -808,17 +903,297 @@ async function getAddressController(request, reply) {
   return reply.status(200).send({ address });
 }
 
-// src/modules/addresses/http/routes/address-routes.ts
-async function addressRoutes(app) {
-  app.addHook("onRequest", verifyJWT);
-  app.addHook("onRequest", verifyUserRole("ADMINISTRATOR"));
-  app.post("/addresses/event/:event_id", createAddressToEventController);
+// src/modules/addresses/http/controllers/list-addresses-by-event-controller.ts
+var import_zod10 = require("zod");
+
+// src/modules/addresses/use-cases/list-addresses-by-event-use-case.ts
+var ListAddressesByEventUseCase = class {
+  constructor(addressesRepository) {
+    this.addressesRepository = addressesRepository;
+  }
+  async execute({ event_id }) {
+    const addresses = await this.addressesRepository.findManyByEvent(event_id);
+    return { addresses };
+  }
+};
+
+// src/modules/addresses/use-cases/factories/make-list-addresses-by-event-use-case.ts
+function makeListAddressesByEventUseCase() {
+  const addressesRepository = new PrismaAddressesRepository();
+  const useCase = new ListAddressesByEventUseCase(addressesRepository);
+  return useCase;
+}
+
+// src/modules/addresses/http/controllers/list-addresses-by-event-controller.ts
+async function listAddressesByEventController(request, reply) {
+  const paramsSchema = import_zod10.z.object({
+    event_id: import_zod10.z.string().uuid()
+  }).strict();
+  const { event_id } = paramsSchema.parse(request.params);
+  const listAddresses = makeListAddressesByEventUseCase();
+  const { addresses } = await listAddresses.execute({ event_id });
+  return reply.status(200).send({ addresses });
+}
+
+// src/modules/addresses/http/routes/event-addresses-routes.ts
+async function eventAddressesRoutes(app) {
   app.get("/addresses/:id", getAddressController);
-  app.put("/addresses/:id", updateAddressController);
+  const adminMiddlewares = {
+    onRequest: [verifyJWT, verifyUserRole("ADMINISTRATOR")]
+  };
+  app.post(
+    "/addresses/event/:event_id",
+    adminMiddlewares,
+    createAddressToEventController
+  );
+  app.put(
+    "/addresses/:address_id/event/:event_id",
+    adminMiddlewares,
+    updateAddressToEventController
+  );
+  app.get(
+    "/addresses/event/:event_id",
+    adminMiddlewares,
+    listAddressesByEventController
+  );
+}
+
+// src/modules/addresses/http/controllers/update-address-to-participant-controller.ts
+var import_zod11 = require("zod");
+
+// src/modules/addresses/use-cases/update-address-to-participant-use-case.ts
+var UpdateAddressToParticipantUseCase = class {
+  constructor(addressesRepository, usersRepository) {
+    this.addressesRepository = addressesRepository;
+    this.usersRepository = usersRepository;
+  }
+  async execute({
+    address_id,
+    user_id,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state
+  }) {
+    const userParticipant = await this.usersRepository.findByIdWithRelations(
+      user_id
+    );
+    if (!userParticipant)
+      throw new ResourceNotFoundError3("User");
+    if (userParticipant.role !== "PARTICIPANT")
+      throw new UserIsNotParticipantError();
+    if (userParticipant?.addresses && userParticipant.addresses.length === 0)
+      throw new ResourceNotFoundError3("Address");
+    const address = userParticipant.addresses.find(
+      (address2) => address2.id === address_id
+    );
+    if (!address)
+      throw new ResourceNotFoundError3("Address");
+    if (street)
+      address.street = street;
+    if (street_number)
+      address.street_number = street_number;
+    if (complement)
+      address.complement = complement;
+    if (zip_code)
+      address.zip_code = zip_code;
+    if (district)
+      address.district = district;
+    if (city)
+      address.city = city;
+    if (state)
+      address.state = state;
+    await this.addressesRepository.save(address);
+    return { address };
+  }
+};
+
+// src/modules/addresses/use-cases/factories/make-update-address-to-participant-use-case.ts
+function makeUpdateAddressToParticipantUseCase() {
+  const addressesRepository = new PrismaAddressesRepository();
+  const usersRepository = new PrismaUsersRepository();
+  const useCase = new UpdateAddressToParticipantUseCase(
+    addressesRepository,
+    usersRepository
+  );
+  return useCase;
+}
+
+// src/modules/addresses/http/controllers/update-address-to-participant-controller.ts
+async function updateAddressToParticipantController(request, reply) {
+  const user_id = request?.user?.sub;
+  const paramsSchema = import_zod11.z.object({
+    id: import_zod11.z.string().uuid()
+  }).strict();
+  const bodySchema = import_zod11.z.object({
+    street: import_zod11.z.string().optional(),
+    street_number: import_zod11.z.string().optional(),
+    complement: import_zod11.z.string().optional(),
+    zip_code: import_zod11.z.string().optional(),
+    district: import_zod11.z.string().optional(),
+    city: import_zod11.z.string().optional(),
+    state: import_zod11.z.string().optional()
+  }).strict();
+  const { id } = paramsSchema.parse(request.params);
+  const { street, street_number, complement, zip_code, district, city, state } = bodySchema.parse(request.body);
+  const updateAddress = makeUpdateAddressToParticipantUseCase();
+  const { address } = await updateAddress.execute({
+    address_id: id,
+    user_id,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state
+  });
+  return reply.status(200).send({ address });
+}
+
+// src/modules/addresses/use-cases/list-addresses-by-participant-use-case.ts
+var ListAddressesByParticipantUseCase = class {
+  constructor(addressesRepository) {
+    this.addressesRepository = addressesRepository;
+  }
+  async execute({ user_id }) {
+    const addresses = await this.addressesRepository.findManyByUser(user_id);
+    return { addresses };
+  }
+};
+
+// src/modules/addresses/use-cases/factories/make-list-addresses-by-participant-use-case.ts
+function makeListAddressesByParticipantUseCase() {
+  const addressesRepository = new PrismaAddressesRepository();
+  const useCase = new ListAddressesByParticipantUseCase(addressesRepository);
+  return useCase;
+}
+
+// src/modules/addresses/http/controllers/list-addresses-by-participant-controller.ts
+async function listAddressesByParticipantController(request, reply) {
+  const user_id = request?.user?.sub;
+  const listAddresses = makeListAddressesByParticipantUseCase();
+  const { addresses } = await listAddresses.execute({ user_id });
+  return reply.status(200).send({ addresses });
+}
+
+// src/modules/addresses/http/controllers/create-address-to-participant-controller.ts
+var import_zod12 = require("zod");
+
+// src/modules/addresses/use-cases/create-address-to-participant-use-case.ts
+var CreateAddressToParticipantUseCase = class {
+  constructor(addressesRepository, usersRepository) {
+    this.addressesRepository = addressesRepository;
+    this.usersRepository = usersRepository;
+  }
+  async execute({
+    user_id,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state
+  }) {
+    const userParticipant = await this.usersRepository.findByIdWithRelations(
+      user_id
+    );
+    if (!userParticipant)
+      throw new ResourceNotFoundError3("User");
+    if (userParticipant.role !== "PARTICIPANT")
+      throw new UserIsNotParticipantError();
+    if (userParticipant?.addresses && userParticipant.addresses.length > 0)
+      throw new AlreadyHasAddressError();
+    const address = await this.addressesRepository.create({
+      street,
+      street_number,
+      complement,
+      zip_code,
+      district,
+      city,
+      state,
+      users: {
+        connect: {
+          id: userParticipant.id
+        }
+      }
+    });
+    return { address };
+  }
+};
+
+// src/modules/addresses/use-cases/factories/make-create-address-to-participant-use-case.ts
+function makeCreateAddressToParticipantUseCase() {
+  const addressesRepository = new PrismaAddressesRepository();
+  const usersRepository = new PrismaUsersRepository();
+  const useCase = new CreateAddressToParticipantUseCase(
+    addressesRepository,
+    usersRepository
+  );
+  return useCase;
+}
+
+// src/modules/addresses/http/controllers/create-address-to-participant-controller.ts
+async function createAddressToParticipantController(request, reply) {
+  const user_id = request?.user?.sub;
+  const bodySchema = import_zod12.z.object({
+    street: import_zod12.z.string(),
+    street_number: import_zod12.z.string(),
+    complement: import_zod12.z.string().optional(),
+    zip_code: import_zod12.z.string(),
+    district: import_zod12.z.string(),
+    city: import_zod12.z.string(),
+    state: import_zod12.z.string()
+  }).strict();
+  const { street, street_number, complement, zip_code, district, city, state } = bodySchema.parse(request.body);
+  const createAddress = makeCreateAddressToParticipantUseCase();
+  const { address } = await createAddress.execute({
+    user_id,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state
+  });
+  return reply.status(200).send({ address });
+}
+
+// src/modules/addresses/http/routes/participant-addresses-routes.ts
+async function participantAddressesRoutes(app) {
+  const participantMiddlewares = {
+    onRequest: [verifyJWT, verifyUserRole("PARTICIPANT")]
+  };
+  app.post(
+    "/addresses/participant",
+    participantMiddlewares,
+    createAddressToParticipantController
+  );
+  app.put(
+    "/addresses/:id/participant",
+    participantMiddlewares,
+    updateAddressToParticipantController
+  );
+  app.get(
+    "/addresses/participant",
+    participantMiddlewares,
+    listAddressesByParticipantController
+  );
+}
+
+// src/modules/addresses/http/routes/index.ts
+async function addressesRoutes(app) {
+  app.register(eventAddressesRoutes);
+  app.register(participantAddressesRoutes);
 }
 
 // src/modules/event-tickets/http/controllers/create-ticket-controller.ts
-var import_zod10 = require("zod");
+var import_zod13 = require("zod");
 
 // src/modules/event-tickets/repositories/prisma/prisma-addresses-repository.ts
 var PrismaTicketsRepository = class {
@@ -932,13 +1307,13 @@ function makeCreateTicketUseCase() {
 
 // src/modules/event-tickets/http/controllers/create-ticket-controller.ts
 async function createTicketController(request, reply) {
-  const paramsSchema = import_zod10.z.object({
-    event_id: import_zod10.z.string().uuid()
+  const paramsSchema = import_zod13.z.object({
+    event_id: import_zod13.z.string().uuid()
   }).strict();
-  const bodySchema = import_zod10.z.object({
-    title: import_zod10.z.string(),
-    price: import_zod10.z.number().positive(),
-    expires_in: import_zod10.z.coerce.date().optional()
+  const bodySchema = import_zod13.z.object({
+    title: import_zod13.z.string(),
+    price: import_zod13.z.number().positive(),
+    expires_in: import_zod13.z.coerce.date().optional()
   }).strict();
   const { event_id } = paramsSchema.parse(request.params);
   const { title, price, expires_in } = bodySchema.parse(request.body);
@@ -953,7 +1328,7 @@ async function createTicketController(request, reply) {
 }
 
 // src/modules/event-tickets/http/controllers/list-tickets-by-event-controller.ts
-var import_zod11 = require("zod");
+var import_zod14 = require("zod");
 
 // src/modules/event-tickets/use-cases/list-tickets-by-event-use-case.ts
 var ListTicketsByEventUseCase = class {
@@ -975,8 +1350,8 @@ function makeListTicketsByEventUseCase() {
 
 // src/modules/event-tickets/http/controllers/list-tickets-by-event-controller.ts
 async function listTicketsByEventController(request, reply) {
-  const paramsSchema = import_zod11.z.object({
-    event_id: import_zod11.z.string().uuid()
+  const paramsSchema = import_zod14.z.object({
+    event_id: import_zod14.z.string().uuid()
   }).strict();
   const { event_id } = paramsSchema.parse(request.params);
   const listTickets = makeListTicketsByEventUseCase();
@@ -985,7 +1360,7 @@ async function listTicketsByEventController(request, reply) {
 }
 
 // src/modules/event-tickets/http/controllers/update-ticket-controller.ts
-var import_zod12 = require("zod");
+var import_zod15 = require("zod");
 
 // src/modules/event-tickets/use-cases/update-ticket-use-case.ts
 var import_client2 = require("@prisma/client");
@@ -1017,13 +1392,13 @@ function makeUpdateTicketUseCase() {
 
 // src/modules/event-tickets/http/controllers/update-ticket-controller.ts
 async function updateTicketController(request, reply) {
-  const paramsSchema = import_zod12.z.object({
-    id: import_zod12.z.string().uuid()
+  const paramsSchema = import_zod15.z.object({
+    id: import_zod15.z.string().uuid()
   }).strict();
-  const bodySchema = import_zod12.z.object({
-    title: import_zod12.z.string().optional(),
-    price: import_zod12.z.number().optional(),
-    expires_in: import_zod12.z.coerce.date().optional()
+  const bodySchema = import_zod15.z.object({
+    title: import_zod15.z.string().optional(),
+    price: import_zod15.z.number().optional(),
+    expires_in: import_zod15.z.coerce.date().optional()
   }).strict();
   const { id } = paramsSchema.parse(request.params);
   const { title, price, expires_in } = bodySchema.parse(request.body);
@@ -1047,7 +1422,7 @@ async function ticketsRoutes(app) {
 }
 
 // src/modules/event-registrations/http/controllers/create-registration-controller.ts
-var import_zod13 = require("zod");
+var import_zod16 = require("zod");
 
 // src/modules/event-registrations/repositories/prisma/prisma-registrations-repository.ts
 var PrismaRegistrationsRepository = class {
@@ -1072,14 +1447,23 @@ var PrismaRegistrationsRepository = class {
   async findManyByEvent(event_id) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
-      include: { payment: true }
+      include: {
+        user: { select: { email: true, participant: true } },
+        payment: true
+      }
     });
     return registrations;
   }
   async findManyByUser(user_id) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { user_id },
-      include: { event: { include: { addresses: true } }, payment: true }
+      include: {
+        user: {
+          select: { email: true, participant: true }
+        },
+        event: { include: { addresses: true } },
+        payment: true
+      }
     });
     return registrations;
   }
@@ -1098,17 +1482,10 @@ var PrismaRegistrationsRepository = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
-var EventNotFoundError2 = class extends AppError {
-  constructor() {
-    super("Event not found.", 404);
-  }
-};
-
-// src/modules/event-registrations/use-cases/errors/user-not-found-error.ts
-var UserNotFoundError = class extends AppError {
-  constructor() {
-    super("User not found.", 404);
+// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
+var ResourceNotFoundError4 = class extends AppError {
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -1129,47 +1506,27 @@ var CreateEventRegistrationUseCase = class {
   async execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
-      throw new EventNotFoundError2();
+      throw new ResourceNotFoundError4("Event");
     const userExists = await this.usersRepository.findById(user_id);
     if (!userExists)
-      throw new UserNotFoundError();
+      throw new ResourceNotFoundError4("User");
     const registrationExtist = await this.registrationsRepository.findByEventAndUser(event_id, user_id);
     if (registrationExtist)
       throw new UserAlreadyRegisteredError();
     const registration = await this.registrationsRepository.create({
       user_id,
       event_id,
-      full_name,
-      phone_number,
-      age,
-      document_number,
-      document_type,
-      guardian_name,
-      guardian_phone_number,
-      prayer_group,
       event_source,
-      community_type,
-      pcd_description,
-      allergy_description,
       transportation_mode,
-      accepted_the_terms
+      accepted_the_terms,
+      credential_name
     });
     return { registration };
   }
@@ -1190,24 +1547,14 @@ function makeCreateEventRegistrationUseCase() {
 
 // src/modules/event-registrations/http/controllers/create-registration-controller.ts
 async function createRegistrationController(request, reply) {
-  const paramsSchema = import_zod13.z.object({
-    event_id: import_zod13.z.string().uuid()
+  const paramsSchema = import_zod16.z.object({
+    event_id: import_zod16.z.string().uuid()
   }).strict();
-  const bodySchema = import_zod13.z.object({
-    full_name: import_zod13.z.string().min(5),
-    phone_number: import_zod13.z.string(),
-    age: import_zod13.z.number().int().positive(),
-    document_number: import_zod13.z.string(),
-    document_type: import_zod13.z.enum(["CPF", "RG"]),
-    guardian_name: import_zod13.z.string().optional(),
-    guardian_phone_number: import_zod13.z.string().optional(),
-    prayer_group: import_zod13.z.string().optional(),
-    event_source: import_zod13.z.string().optional(),
-    community_type: import_zod13.z.enum(["VIDA", "ALIAN\xC7A"]).optional(),
-    pcd_description: import_zod13.z.string().optional(),
-    allergy_description: import_zod13.z.string().optional(),
-    transportation_mode: import_zod13.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
-    accepted_the_terms: import_zod13.z.boolean().refine((value) => value === true, {
+  const bodySchema = import_zod16.z.object({
+    credential_name: import_zod16.z.string().min(5).max(18),
+    event_source: import_zod16.z.string().optional(),
+    transportation_mode: import_zod16.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
+    accepted_the_terms: import_zod16.z.boolean().refine((value) => value === true, {
       message: "User must accept the terms",
       path: ["accepted_the_terms"]
     })
@@ -1215,45 +1562,25 @@ async function createRegistrationController(request, reply) {
   const user_id = request.user.sub;
   const { event_id } = paramsSchema.parse(request.params);
   const {
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   } = bodySchema.parse(request.body);
   const createEventRegistration = makeCreateEventRegistrationUseCase();
   const { registration } = await createEventRegistration.execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   });
   return reply.status(200).send({ registration });
 }
 
 // src/modules/event-registrations/http/controllers/list-registrations-by-event-controller.ts
-var import_zod14 = require("zod");
+var import_zod17 = require("zod");
 
 // src/modules/event-registrations/use-cases/list-registrations-by-event-use-case.ts
 var ListRegistrationsByEventUseCase = class {
@@ -1279,8 +1606,8 @@ function makeListRegistrationsByEventUseCase() {
 
 // src/modules/event-registrations/http/controllers/list-registrations-by-event-controller.ts
 async function listRegistrationsByEventController(request, reply) {
-  const paramsSchema = import_zod14.z.object({
-    event_id: import_zod14.z.string().uuid()
+  const paramsSchema = import_zod17.z.object({
+    event_id: import_zod17.z.string().uuid()
   }).strict();
   const { event_id } = paramsSchema.parse(request.params);
   const listRegistrationsByEvent = makeListRegistrationsByEventUseCase();
@@ -1321,7 +1648,7 @@ async function listRegistrationsByUserController(request, reply) {
 }
 
 // src/modules/event-registrations/http/controllers/validate-registration-controller.ts
-var import_zod15 = require("zod");
+var import_zod18 = require("zod");
 
 // src/modules/event-registrations/use-cases/validate-registration-use-case.ts
 var ValidateRegistrationUseCase = class {
@@ -1333,7 +1660,7 @@ var ValidateRegistrationUseCase = class {
       registration_id
     );
     if (!registration)
-      throw new EventNotFoundError2();
+      throw new ResourceNotFoundError4("Registration");
     if (registration.is_approved)
       return { registration };
     registration.is_approved = !registration.is_approved;
@@ -1351,8 +1678,8 @@ function makeValidateRegistrationUseCase() {
 
 // src/modules/event-registrations/http/controllers/validate-registration-controller.ts
 async function validateRegistrationController(request, reply) {
-  const paramsSchema = import_zod15.z.object({
-    registration_id: import_zod15.z.string().uuid()
+  const paramsSchema = import_zod18.z.object({
+    registration_id: import_zod18.z.string().uuid()
   }).strict();
   const { registration_id } = paramsSchema.parse(request.params);
   const validateRegistration = makeValidateRegistrationUseCase();
@@ -1376,7 +1703,7 @@ async function registrationsRoutes(app) {
     listRegistrationsByEventController
   );
   app.patch(
-    "/registrations/:registration_id/validate",
+    "/registrations/:registration_id/approve",
     adminMiddlewares,
     validateRegistrationController
   );
@@ -1427,7 +1754,7 @@ var upload_default = {
 var multer2 = (0, import_fastify_multer2.default)(upload_default.multer);
 
 // src/modules/payments/http/controllers/create-payment-controller.ts
-var import_zod16 = require("zod");
+var import_zod19 = require("zod");
 
 // src/modules/payments/repositories/prisma/prisma-payments-repository.ts
 var PrismaPaymentsRepository = class {
@@ -1521,17 +1848,17 @@ function makeCreatePaymentUseCase() {
 
 // src/modules/payments/http/controllers/create-payment-controller.ts
 async function createPaymentController(request, reply) {
-  const paramsSchema = import_zod16.z.object({
-    event_registration_id: import_zod16.z.string().uuid()
+  const paramsSchema = import_zod19.z.object({
+    event_registration_id: import_zod19.z.string().uuid()
   }).strict();
-  const bodySchema = import_zod16.z.object({
-    payment_method: import_zod16.z.enum([
+  const bodySchema = import_zod19.z.object({
+    payment_method: import_zod19.z.enum([
       "PIX",
       "DINHEIRO",
       "CART\xC3O DE D\xC9BITO",
       "CART\xC3O DE CR\xC9DITO"
     ]),
-    price: import_zod16.z.coerce.number().positive()
+    price: import_zod19.z.coerce.number().positive()
   }).strict();
   const user_id = request.user.sub;
   const file = request.file;
@@ -1549,7 +1876,7 @@ async function createPaymentController(request, reply) {
 }
 
 // src/modules/payments/http/controllers/update-payment-status-controller.ts
-var import_zod17 = require("zod");
+var import_zod20 = require("zod");
 
 // src/modules/payments/use-cases/update-payment-status-use-case.ts
 var UpdatePaymentStatusUseCase = class {
@@ -1579,8 +1906,8 @@ function makeUpdatePaymentStatusUseCase() {
 
 // src/modules/payments/http/controllers/update-payment-status-controller.ts
 async function updatePaymentStatusController(request, reply) {
-  const paramsSchema = import_zod17.z.object({
-    id: import_zod17.z.string().uuid()
+  const paramsSchema = import_zod20.z.object({
+    id: import_zod20.z.string().uuid()
   }).strict();
   const { id } = paramsSchema.parse(request.params);
   const updatePayment = makeUpdatePaymentStatusUseCase();
@@ -1609,6 +1936,540 @@ async function paymentsRoutes(app) {
   );
 }
 
+// src/modules/participants/repositories/prisma/prisma-participants-repository.ts
+var PrismaParticipantsRepository = class {
+  async findById(id) {
+    const participant = await prisma.participant.findUnique({
+      where: { id }
+    });
+    return participant;
+  }
+  async findByUser(user_id) {
+    const participant = await prisma.participant.findFirst({
+      where: { user_id }
+    });
+    return participant;
+  }
+  async findManyWithUser() {
+    const participants = await prisma.participant.findMany({
+      include: { user: true }
+    });
+    return participants;
+  }
+  async create(data) {
+    const participant = await prisma.participant.create({
+      data
+    });
+    return participant;
+  }
+  async save(data) {
+    const participant = await prisma.participant.update({
+      where: { id: data.id },
+      data
+    });
+    return participant;
+  }
+};
+
+// src/modules/participants/use-cases/list-participants-with-user-use-case.ts
+var ListParticipantsWithUserUseCase = class {
+  constructor(participantsRepository) {
+    this.participantsRepository = participantsRepository;
+  }
+  async execute() {
+    const participants = await this.participantsRepository.findManyWithUser();
+    return { participants };
+  }
+};
+
+// src/modules/participants/use-cases/factories/make-list-participants-with-user-use-case.ts
+function makeListParticipantsWithUserUseCase() {
+  const participantsRepository = new PrismaParticipantsRepository();
+  const useCase = new ListParticipantsWithUserUseCase(participantsRepository);
+  return useCase;
+}
+
+// src/modules/participants/http/controllers/list-participants-controller.ts
+async function listParticipantsController(_request, reply) {
+  const listParticipants = makeListParticipantsWithUserUseCase();
+  const { participants } = await listParticipants.execute();
+  return reply.status(200).send({ participants });
+}
+
+// src/modules/participants/http/routes/admin-participants-routes.ts
+async function adminParticipantsRoutes(app) {
+  const adminMiddlewares = {
+    onRequest: [verifyJWT, verifyUserRole("ADMINISTRATOR")]
+  };
+  app.get("/participants/all", adminMiddlewares, listParticipantsController);
+}
+
+// src/modules/participants/http/controllers/update-participant-controller.ts
+var import_zod21 = require("zod");
+
+// src/modules/participants/use-cases/errors/resource-not-found-error.ts
+var ResourceNotFoundError5 = class extends AppError {
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
+  }
+};
+
+// src/modules/participants/use-cases/errors/participant-already-registered-error.ts
+var ParticipantAlreadyRegisteredError = class extends AppError {
+  constructor() {
+    super("Participant data is already registered for this user", 409);
+  }
+};
+
+// src/modules/participants/use-cases/errors/user-already-exists-error.ts
+var UserAlreadyExistsError2 = class extends AppError {
+  constructor() {
+    super("E-mail already exists.", 409);
+  }
+};
+
+// src/modules/participants/use-cases/update-participant-use-case.ts
+var UpdateParticipantUseCase = class {
+  constructor(participantsRepository) {
+    this.participantsRepository = participantsRepository;
+  }
+  async execute({
+    user_id,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  }) {
+    const participant = await this.participantsRepository.findByUser(user_id);
+    if (!participant)
+      throw new ResourceNotFoundError5("Participant");
+    if (full_name)
+      participant.full_name = full_name;
+    if (phone_number)
+      participant.phone_number = phone_number;
+    if (birthdate)
+      participant.birthdate = birthdate;
+    if (document_number)
+      participant.document_number = document_number;
+    if (document_type)
+      participant.document_type = document_type;
+    if (guardian_name)
+      participant.guardian_name = guardian_name;
+    if (guardian_phone_number)
+      participant.guardian_phone_number = guardian_phone_number;
+    if (prayer_group)
+      participant.prayer_group = prayer_group;
+    if (community_type)
+      participant.community_type = community_type;
+    if (pcd_description)
+      participant.pcd_description = pcd_description;
+    if (allergy_description)
+      participant.allergy_description = allergy_description;
+    await this.participantsRepository.save(participant);
+    return { participant };
+  }
+};
+
+// src/modules/participants/use-cases/factories/make-update-participant-use-case.ts
+function makeUpdateParticipantUseCase() {
+  const participantsRepository = new PrismaParticipantsRepository();
+  const useCase = new UpdateParticipantUseCase(participantsRepository);
+  return useCase;
+}
+
+// src/modules/participants/http/controllers/update-participant-controller.ts
+async function updateParticipantController(request, reply) {
+  const bodySchema = import_zod21.z.object({
+    full_name: import_zod21.z.string().min(5).optional(),
+    phone_number: import_zod21.z.string().optional(),
+    birthdate: import_zod21.z.coerce.date().optional(),
+    document_number: import_zod21.z.string().optional(),
+    document_type: import_zod21.z.enum(["CPF", "RG"]).optional(),
+    guardian_name: import_zod21.z.string().optional().optional(),
+    guardian_phone_number: import_zod21.z.string().optional().optional(),
+    prayer_group: import_zod21.z.string().optional().optional(),
+    community_type: import_zod21.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
+    pcd_description: import_zod21.z.string().optional().optional(),
+    allergy_description: import_zod21.z.string().optional().optional()
+  }).strict();
+  const user_id = request.user.sub;
+  const {
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  } = bodySchema.parse(request.body);
+  const updateParticipant = makeUpdateParticipantUseCase();
+  const { participant } = await updateParticipant.execute({
+    user_id,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  });
+  return reply.status(200).send({ participant });
+}
+
+// src/modules/participants/http/controllers/create-participant-controller.ts
+var import_zod22 = require("zod");
+
+// src/modules/participants/use-cases/create-participant-use-case.ts
+var CreateParticipantUseCase = class {
+  constructor(participantsRepository, usersRepository) {
+    this.participantsRepository = participantsRepository;
+    this.usersRepository = usersRepository;
+  }
+  async execute({
+    user_id,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  }) {
+    const userExists = await this.usersRepository.findById(user_id);
+    if (!userExists)
+      throw new ResourceNotFoundError5("User");
+    if (userExists.role !== "PARTICIPANT")
+      throw new ResourceNotFoundError5("User");
+    const participantDataExists = await this.participantsRepository.findByUser(
+      user_id
+    );
+    if (participantDataExists)
+      throw new ParticipantAlreadyRegisteredError();
+    const participant = await this.participantsRepository.create({
+      user_id,
+      full_name,
+      phone_number,
+      birthdate,
+      document_number,
+      document_type,
+      guardian_name,
+      guardian_phone_number,
+      prayer_group,
+      community_type,
+      pcd_description,
+      allergy_description
+    });
+    return { participant };
+  }
+};
+
+// src/modules/participants/use-cases/factories/make-create-participant-use-case.ts
+function makeCreateParticipantUseCase() {
+  const participantsRepository = new PrismaParticipantsRepository();
+  const usersRepository = new PrismaUsersRepository();
+  const useCase = new CreateParticipantUseCase(
+    participantsRepository,
+    usersRepository
+  );
+  return useCase;
+}
+
+// src/modules/participants/http/controllers/create-participant-controller.ts
+async function createParticipantController(request, reply) {
+  const bodySchema = import_zod22.z.object({
+    full_name: import_zod22.z.string().min(5),
+    phone_number: import_zod22.z.string(),
+    birthdate: import_zod22.z.coerce.date(),
+    document_number: import_zod22.z.string(),
+    document_type: import_zod22.z.enum(["CPF", "RG"]),
+    guardian_name: import_zod22.z.string().optional(),
+    guardian_phone_number: import_zod22.z.string().optional(),
+    prayer_group: import_zod22.z.string().optional(),
+    community_type: import_zod22.z.enum(["VIDA", "ALIAN\xC7A"]).optional(),
+    pcd_description: import_zod22.z.string().optional(),
+    allergy_description: import_zod22.z.string().optional()
+  }).strict();
+  const user_id = request.user.sub;
+  const {
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  } = bodySchema.parse(request.body);
+  const createParticipant = makeCreateParticipantUseCase();
+  const { participant } = await createParticipant.execute({
+    user_id,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  });
+  return reply.status(200).send({ participant });
+}
+
+// src/modules/participants/use-cases/show-participant-by-user-use-case.ts
+var ShowParticipantByUserUseCase = class {
+  constructor(participantsRepository) {
+    this.participantsRepository = participantsRepository;
+  }
+  async execute({ user_id }) {
+    const participant = await this.participantsRepository.findByUser(user_id);
+    if (!participant)
+      throw new ResourceNotFoundError5("Participante data");
+    return { participant };
+  }
+};
+
+// src/modules/participants/use-cases/factories/make-show-participant-by-user-use-case.ts
+function makeShowParticipantByUserUseCase() {
+  const participantssRepository = new PrismaParticipantsRepository();
+  const useCase = new ShowParticipantByUserUseCase(participantssRepository);
+  return useCase;
+}
+
+// src/modules/participants/http/controllers/show-participants-controller.ts
+async function showParticipantController(request, reply) {
+  const user_id = request.user.sub;
+  const showParticipant = makeShowParticipantByUserUseCase();
+  const { participant } = await showParticipant.execute({ user_id });
+  return reply.status(200).send({ participant });
+}
+
+// src/modules/participants/http/routes/user-participants-routes.ts
+async function userParticipantsRoutes(app) {
+  const participantMiddlewares = {
+    onRequest: [verifyJWT, verifyUserRole("PARTICIPANT")]
+  };
+  app.post(
+    "/participants/me",
+    participantMiddlewares,
+    createParticipantController
+  );
+  app.get(
+    "/participants/me",
+    participantMiddlewares,
+    showParticipantController
+  );
+  app.put(
+    "/participants/me",
+    participantMiddlewares,
+    updateParticipantController
+  );
+}
+
+// src/modules/participants/http/controllers/register-participanting-user-controller.ts
+var import_zod23 = require("zod");
+
+// src/modules/participants/use-cases/register-participanting-user-and-address-use-case.ts
+var import_bcryptjs3 = require("bcryptjs");
+var RegisterParticipantingUserAndAddressUseCase = class {
+  constructor(participantsRepository, usersRepository, addressesRepository) {
+    this.participantsRepository = participantsRepository;
+    this.usersRepository = usersRepository;
+    this.addressesRepository = addressesRepository;
+  }
+  async execute({
+    name,
+    email,
+    password,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  }) {
+    const password_hash = await (0, import_bcryptjs3.hash)(password, 6);
+    const userWithSameEmail = await this.usersRepository.findByEmail(email);
+    if (userWithSameEmail) {
+      throw new UserAlreadyExistsError2();
+    }
+    const user = await this.usersRepository.create({
+      name,
+      email,
+      password_hash
+    });
+    const address = await this.addressesRepository.create({
+      street,
+      street_number,
+      complement,
+      zip_code,
+      district,
+      city,
+      state,
+      users: {
+        connect: {
+          id: user.id
+        }
+      }
+    });
+    const participant = await this.participantsRepository.create({
+      user_id: user.id,
+      full_name,
+      phone_number,
+      birthdate,
+      document_number,
+      document_type,
+      guardian_name,
+      guardian_phone_number,
+      prayer_group,
+      community_type,
+      pcd_description,
+      allergy_description
+    });
+    return { participant };
+  }
+};
+
+// src/modules/participants/use-cases/factories/make-register-participant-user-and-address-use-case.ts
+function makeRegisterParticipantUserAndAddressUseCase() {
+  const participantsRepository = new PrismaParticipantsRepository();
+  const usersRepository = new PrismaUsersRepository();
+  const addressesRepository = new PrismaAddressesRepository();
+  const useCase = new RegisterParticipantingUserAndAddressUseCase(
+    participantsRepository,
+    usersRepository,
+    addressesRepository
+  );
+  return useCase;
+}
+
+// src/modules/participants/http/controllers/register-participanting-user-controller.ts
+async function registerParticipantingUserController(request, reply) {
+  const bodySchema = import_zod23.z.object({
+    name: import_zod23.z.string(),
+    email: import_zod23.z.string().email(),
+    password: import_zod23.z.string().min(8),
+    password_confirmation: import_zod23.z.string().min(8),
+    street: import_zod23.z.string(),
+    street_number: import_zod23.z.string(),
+    complement: import_zod23.z.string().optional(),
+    zip_code: import_zod23.z.string(),
+    district: import_zod23.z.string(),
+    city: import_zod23.z.string(),
+    state: import_zod23.z.string(),
+    full_name: import_zod23.z.string().min(5),
+    phone_number: import_zod23.z.string(),
+    birthdate: import_zod23.z.coerce.date(),
+    document_number: import_zod23.z.string(),
+    document_type: import_zod23.z.enum(["CPF", "RG"]),
+    guardian_name: import_zod23.z.string().optional().optional(),
+    guardian_phone_number: import_zod23.z.string().optional().optional(),
+    prayer_group: import_zod23.z.string().optional().optional(),
+    community_type: import_zod23.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
+    pcd_description: import_zod23.z.string().optional().optional(),
+    allergy_description: import_zod23.z.string().optional().optional()
+  }).strict().refine((data) => data.password === data.password_confirmation, {
+    message: "Passwords don't match",
+    path: ["password_confirmation"]
+  });
+  const {
+    name,
+    email,
+    password,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  } = bodySchema.parse(request.body);
+  const registerParticipantingUser = makeRegisterParticipantUserAndAddressUseCase();
+  const { participant } = await registerParticipantingUser.execute({
+    name,
+    email,
+    password,
+    street,
+    street_number,
+    complement,
+    zip_code,
+    district,
+    city,
+    state,
+    full_name,
+    phone_number,
+    birthdate,
+    document_number,
+    document_type,
+    guardian_name,
+    guardian_phone_number,
+    prayer_group,
+    community_type,
+    pcd_description,
+    allergy_description
+  });
+  return reply.status(200).send({ participant });
+}
+
+// src/modules/participants/http/routes/publics-participants-routes.ts
+async function publicsParticipantsRoutes(app) {
+  app.post("/participants/register", registerParticipantingUserController);
+}
+
+// src/modules/participants/http/routes/index.ts
+async function participantsRoutes(app) {
+  app.register(publicsParticipantsRoutes);
+  app.register(adminParticipantsRoutes);
+  app.register(userParticipantsRoutes);
+}
+
 // src/shared/infra/http/routes.ts
 async function appRoutes(app) {
   app.register(userRoutes);
@@ -1616,10 +2477,11 @@ async function appRoutes(app) {
   app.register(profileRoutes);
   app.register(eventsRoutes);
   app.register(tokenRoutes);
-  app.register(addressRoutes);
+  app.register(addressesRoutes);
   app.register(ticketsRoutes);
   app.register(registrationsRoutes);
   app.register(paymentsRoutes);
+  app.register(participantsRoutes);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

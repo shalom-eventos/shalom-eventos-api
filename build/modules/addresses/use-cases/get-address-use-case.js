@@ -34,8 +34,8 @@ var AppError = class {
 
 // src/modules/addresses/use-cases/errors/resource-not-found-error.ts
 var ResourceNotFoundError = class extends AppError {
-  constructor() {
-    super("Resource not found.", 404);
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -47,7 +47,7 @@ var GetAddressUseCase = class {
   async execute({ id }) {
     const address = await this.addressesRepository.findById(id);
     if (!address)
-      throw new ResourceNotFoundError();
+      throw new ResourceNotFoundError("Event");
     return { address };
   }
 };

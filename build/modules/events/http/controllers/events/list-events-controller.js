@@ -53,6 +53,12 @@ var PrismaEventsRepository = class {
     });
     return event;
   }
+  async findBySlug(slug) {
+    const event = await prisma.event.findUnique({
+      where: { slug }
+    });
+    return event;
+  }
   async findMany() {
     const events = await prisma.event.findMany({});
     return events;

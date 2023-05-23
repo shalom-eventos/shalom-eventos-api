@@ -32,10 +32,10 @@ var AppError = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
-var EventNotFoundError = class extends AppError {
-  constructor() {
-    super("Event not found.", 404);
+// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
+var ResourceNotFoundError = class extends AppError {
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -49,7 +49,7 @@ var ValidateRegistrationUseCase = class {
       registration_id
     );
     if (!registration)
-      throw new EventNotFoundError();
+      throw new ResourceNotFoundError("Registration");
     if (registration.is_approved)
       return { registration };
     registration.is_approved = !registration.is_approved;

@@ -32,17 +32,10 @@ var AppError = class {
   }
 };
 
-// src/modules/event-registrations/use-cases/errors/event-not-found-error.ts
-var EventNotFoundError = class extends AppError {
-  constructor() {
-    super("Event not found.", 404);
-  }
-};
-
-// src/modules/event-registrations/use-cases/errors/user-not-found-error.ts
-var UserNotFoundError = class extends AppError {
-  constructor() {
-    super("User not found.", 404);
+// src/modules/event-registrations/use-cases/errors/resource-not-found-error.ts
+var ResourceNotFoundError = class extends AppError {
+  constructor(resource) {
+    super(`${resource ?? "Resource"} not found.`, 404);
   }
 };
 
@@ -63,47 +56,27 @@ var CreateEventRegistrationUseCase = class {
   async execute({
     user_id,
     event_id,
-    full_name,
-    phone_number,
-    age,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
     event_source,
-    community_type,
-    pcd_description,
-    allergy_description,
     transportation_mode,
-    accepted_the_terms
+    accepted_the_terms,
+    credential_name
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
-      throw new EventNotFoundError();
+      throw new ResourceNotFoundError("Event");
     const userExists = await this.usersRepository.findById(user_id);
     if (!userExists)
-      throw new UserNotFoundError();
+      throw new ResourceNotFoundError("User");
     const registrationExtist = await this.registrationsRepository.findByEventAndUser(event_id, user_id);
     if (registrationExtist)
       throw new UserAlreadyRegisteredError();
     const registration = await this.registrationsRepository.create({
       user_id,
       event_id,
-      full_name,
-      phone_number,
-      age,
-      document_number,
-      document_type,
-      guardian_name,
-      guardian_phone_number,
-      prayer_group,
       event_source,
-      community_type,
-      pcd_description,
-      allergy_description,
       transportation_mode,
-      accepted_the_terms
+      accepted_the_terms,
+      credential_name
     });
     return { registration };
   }

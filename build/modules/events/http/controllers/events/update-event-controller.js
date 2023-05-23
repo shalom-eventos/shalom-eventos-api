@@ -64,6 +64,12 @@ var PrismaEventsRepository = class {
     });
     return event;
   }
+  async findBySlug(slug) {
+    const event = await prisma.event.findUnique({
+      where: { slug }
+    });
+    return event;
+  }
   async findMany() {
     const events = await prisma.event.findMany({});
     return events;
@@ -93,6 +99,23 @@ var PrismaEventsRepository = class {
 // src/modules/events/use-cases/update-event-use-case.ts
 var import_dayjs = __toESM(require("dayjs"));
 
+// src/shared/utils/generate-slug.ts
+var generateSlug = ({
+  keyword,
+  separator = "-",
+  withHash = false,
+  hash
+}) => {
+  const slug = `${keyword.toLowerCase()}`.replace(
+    /([^a-z0-9 ]+)|\s/gi,
+    separator
+  );
+  if (!withHash)
+    return slug;
+  const hashCode = hash ?? String((/* @__PURE__ */ new Date()).getTime()).substring(8);
+  return slug + separator + hashCode;
+};
+
 // src/shared/errors/app-error.ts
 var AppError = class {
   constructor(message, statusCode = 400) {
@@ -115,12 +138,19 @@ var ResourceNotFoundError = class extends AppError {
   }
 };
 
+// src/modules/events/use-cases/errors/slug-exists-error.ts
+var SlugExistsError = class extends AppError {
+  constructor() {
+    super("Slug already exists.", 409);
+  }
+};
+
 // src/modules/events/use-cases/update-event-use-case.ts
 var UpdateEventUseCase = class {
   constructor(eventsRepository) {
     this.eventsRepository = eventsRepository;
   }
-  async execute(id, { title, description, start_date, end_date }) {
+  async execute(id, { slug, title, description, start_date, end_date }) {
     const event = await this.eventsRepository.findById(id);
     if (!event)
       throw new ResourceNotFoundError();
@@ -142,6 +172,13 @@ var UpdateEventUseCase = class {
         throw new InvalidDateIntervalError();
       event.end_date = end_date;
     }
+    if (slug) {
+      const slugHashed = generateSlug({ keyword: slug });
+      const slugExists = await this.eventsRepository.findBySlug(slugHashed);
+      if (slugExists && slugHashed !== event.slug)
+        throw new SlugExistsError();
+      event.slug = slugHashed;
+    }
     await this.eventsRepository.save(event);
     return { event };
   }
@@ -160,6 +197,7 @@ async function updateEventController(request, reply) {
     id: import_zod2.z.string().uuid()
   }).strict();
   const bodySchema = import_zod2.z.object({
+    slug: import_zod2.z.string().optional(),
     title: import_zod2.z.string().optional(),
     description: import_zod2.z.string().optional(),
     start_date: import_zod2.z.coerce.date().optional(),
