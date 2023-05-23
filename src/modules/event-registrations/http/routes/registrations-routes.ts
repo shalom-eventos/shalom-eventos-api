@@ -22,7 +22,7 @@ export async function registrationsRoutes(app: FastifyInstance) {
     listRegistrationsByEventController
   );
   app.patch(
-    '/registrations/:registration_id/validate',
+    '/registrations/:registration_id/approve',
     adminMiddlewares,
     validateRegistrationController
   );

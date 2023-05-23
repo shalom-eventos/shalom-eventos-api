@@ -31,7 +31,10 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
   async findManyByEvent(event_id: string) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
-      include: { user: { include: { participant: true } }, payment: true },
+      include: {
+        user: { select: { email: true, participant: true } },
+        payment: true,
+      },
     });
 
     return registrations;
@@ -40,7 +43,13 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
   async findManyByUser(user_id: string) {
     const registrations = await prisma.eventRegistration.findMany({
       where: { user_id },
-      include: { event: { include: { addresses: true } }, payment: true },
+      include: {
+        user: {
+          select: { email: true, participant: true },
+        },
+        event: { include: { addresses: true } },
+        payment: true,
+      },
     });
 
     return registrations;
