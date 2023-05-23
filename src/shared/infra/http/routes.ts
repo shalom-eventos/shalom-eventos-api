@@ -9,6 +9,7 @@ import { addressesRoutes } from '@/modules/addresses/http/routes';
 import { ticketsRoutes } from '@/modules/event-tickets/http/routes/tickets-routes';
 import { registrationsRoutes } from '@/modules/event-registrations/http/routes/registrations-routes';
 import { paymentsRoutes } from '@/modules/payments/http/routes/payments-routes';
+import { participantsRoutes } from '@/modules/participants/http/routes';
 
 export async function appRoutes(app: FastifyInstance) {
   app.register(userRoutes);
@@ -20,4 +21,5 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(ticketsRoutes);
   app.register(registrationsRoutes);
   app.register(paymentsRoutes);
+  app.register(participantsRoutes);
 }
