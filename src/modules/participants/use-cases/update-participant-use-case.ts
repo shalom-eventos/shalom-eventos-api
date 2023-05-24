@@ -16,6 +16,7 @@ interface IRequest {
   community_type?: string;
   pcd_description?: string;
   allergy_description?: string;
+  medication_use_description?: string;
 }
 
 interface IResponse {
@@ -38,6 +39,7 @@ export class UpdateParticipantUseCase {
     community_type,
     pcd_description,
     allergy_description,
+    medication_use_description,
   }: IRequest): Promise<IResponse> {
     const participant = await this.participantsRepository.findByUser(user_id);
     if (!participant) throw new ResourceNotFoundError('Participant');
@@ -55,6 +57,8 @@ export class UpdateParticipantUseCase {
     if (pcd_description) participant.pcd_description = pcd_description;
     if (allergy_description)
       participant.allergy_description = allergy_description;
+    if (medication_use_description)
+      participant.medication_use_description = medication_use_description;
 
     await this.participantsRepository.save(participant);
 

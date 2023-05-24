@@ -49,6 +49,7 @@ export async function exportRegistrationsController(
         TipoComunidade: participantData?.community_type,
         PCD: participantData?.pcd_description,
         Alergias: participantData?.allergy_description,
+        Medicamento: participantData?.medication_use_description,
         MeioDeTransporte: registration.transportation_mode,
         ComoSoubeDoEvento: registration.event_source,
         InscricaoAprovada: registration.is_approved ? 'Sim' : 'Não',

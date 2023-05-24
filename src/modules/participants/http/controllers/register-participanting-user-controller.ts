@@ -33,6 +33,7 @@ export async function registerParticipantingUserController(
       community_type: z.enum(['VIDA', 'ALIANÇA']).optional().optional(),
       pcd_description: z.string().optional().optional(),
       allergy_description: z.string().optional().optional(),
+      medication_use_description: z.string().optional().optional(),
     })
     .strict()
     .refine((data) => data.password === data.password_confirmation, {
@@ -64,6 +65,7 @@ export async function registerParticipantingUserController(
     community_type,
     pcd_description,
     allergy_description,
+    medication_use_description,
   } = bodySchema.parse(request.body);
 
   const registerParticipantingUser =
@@ -93,6 +95,7 @@ export async function registerParticipantingUserController(
     community_type,
     pcd_description,
     allergy_description,
+    medication_use_description,
   });
 
   return reply.status(200).send({ participant });
