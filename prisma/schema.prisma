@@ -32,21 +32,22 @@ model User {
 }
 
 model Participant {
-  id                    String   @id @default(uuid())
-  user_id               String   @unique
-  full_name             String
-  phone_number          String
-  birthdate             DateTime
-  document_number       String
-  document_type         String
-  guardian_name         String?
-  guardian_phone_number String?
-  prayer_group          String?
-  community_type        String?
-  pcd_description       String?
-  allergy_description   String?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @default(now()) @updatedAt
+  id                         String   @id @default(uuid())
+  user_id                    String   @unique
+  full_name                  String
+  phone_number               String
+  birthdate                  DateTime
+  document_number            String
+  document_type              String
+  guardian_name              String?
+  guardian_phone_number      String?
+  prayer_group               String?
+  community_type             String?
+  pcd_description            String?
+  allergy_description        String?
+  medication_use_description String?
+  created_at                 DateTime @default(now())
+  updated_at                 DateTime @default(now()) @updatedAt
 
   user User @relation(fields: [user_id], references: [id])
 

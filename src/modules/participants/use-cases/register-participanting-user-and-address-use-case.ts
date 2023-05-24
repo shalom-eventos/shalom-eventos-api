@@ -31,6 +31,7 @@ interface IRequest {
   community_type?: string;
   pcd_description?: string;
   allergy_description?: string;
+  medication_use_description?: string;
 }
 
 interface IResponse {
@@ -68,6 +69,7 @@ export class RegisterParticipantingUserAndAddressUseCase {
     community_type,
     pcd_description,
     allergy_description,
+    medication_use_description,
   }: IRequest): Promise<IResponse> {
     /**
      * START - Create user
@@ -129,6 +131,7 @@ export class RegisterParticipantingUserAndAddressUseCase {
       community_type,
       pcd_description,
       allergy_description,
+      medication_use_description,
     });
 
     return { participant };

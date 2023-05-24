@@ -20,6 +20,7 @@ export async function createParticipantController(
       community_type: z.enum(['VIDA', 'ALIANÇA']).optional(),
       pcd_description: z.string().optional(),
       allergy_description: z.string().optional(),
+      medication_use_description: z.string().optional(),
     })
     .strict();
 
@@ -36,6 +37,7 @@ export async function createParticipantController(
     community_type,
     pcd_description,
     allergy_description,
+    medication_use_description,
   } = bodySchema.parse(request.body);
 
   const createParticipant = makeCreateParticipantUseCase();
@@ -53,6 +55,7 @@ export async function createParticipantController(
     community_type,
     pcd_description,
     allergy_description,
+    medication_use_description,
   });
 
   return reply.status(200).send({ participant });
