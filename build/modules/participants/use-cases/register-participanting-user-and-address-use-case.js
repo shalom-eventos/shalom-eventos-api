@@ -68,7 +68,8 @@ var RegisterParticipantingUserAndAddressUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const password_hash = await (0, import_bcryptjs.hash)(password, 6);
     const userWithSameEmail = await this.usersRepository.findByEmail(email);
@@ -106,7 +107,8 @@ var RegisterParticipantingUserAndAddressUseCase = class {
       prayer_group,
       community_type,
       pcd_description,
-      allergy_description
+      allergy_description,
+      medication_use_description
     });
     return { participant };
   }

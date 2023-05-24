@@ -157,7 +157,8 @@ var RegisterParticipantingUserAndAddressUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const password_hash = await (0, import_bcryptjs.hash)(password, 6);
     const userWithSameEmail = await this.usersRepository.findByEmail(email);
@@ -195,7 +196,8 @@ var RegisterParticipantingUserAndAddressUseCase = class {
       prayer_group,
       community_type,
       pcd_description,
-      allergy_description
+      allergy_description,
+      medication_use_description
     });
     return { participant };
   }
@@ -279,7 +281,8 @@ async function registerParticipantingUserController(request, reply) {
     prayer_group: import_zod2.z.string().optional().optional(),
     community_type: import_zod2.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
     pcd_description: import_zod2.z.string().optional().optional(),
-    allergy_description: import_zod2.z.string().optional().optional()
+    allergy_description: import_zod2.z.string().optional().optional(),
+    medication_use_description: import_zod2.z.string().optional().optional()
   }).strict().refine((data) => data.password === data.password_confirmation, {
     message: "Passwords don't match",
     path: ["password_confirmation"]
@@ -305,7 +308,8 @@ async function registerParticipantingUserController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   } = bodySchema.parse(request.body);
   const registerParticipantingUser = makeRegisterParticipantUserAndAddressUseCase();
   const { participant } = await registerParticipantingUser.execute({
@@ -329,7 +333,8 @@ async function registerParticipantingUserController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   });
   return reply.status(200).send({ participant });
 }

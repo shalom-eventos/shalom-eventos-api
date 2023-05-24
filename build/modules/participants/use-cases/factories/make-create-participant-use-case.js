@@ -150,7 +150,8 @@ var CreateParticipantUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const userExists = await this.usersRepository.findById(user_id);
     if (!userExists)
@@ -174,7 +175,8 @@ var CreateParticipantUseCase = class {
       prayer_group,
       community_type,
       pcd_description,
-      allergy_description
+      allergy_description,
+      medication_use_description
     });
     return { participant };
   }

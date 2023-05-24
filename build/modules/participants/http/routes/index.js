@@ -181,7 +181,8 @@ var UpdateParticipantUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const participant = await this.participantsRepository.findByUser(user_id);
     if (!participant)
@@ -208,6 +209,8 @@ var UpdateParticipantUseCase = class {
       participant.pcd_description = pcd_description;
     if (allergy_description)
       participant.allergy_description = allergy_description;
+    if (medication_use_description)
+      participant.medication_use_description = medication_use_description;
     await this.participantsRepository.save(participant);
     return { participant };
   }
@@ -233,7 +236,8 @@ async function updateParticipantController(request, reply) {
     prayer_group: import_zod2.z.string().optional().optional(),
     community_type: import_zod2.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
     pcd_description: import_zod2.z.string().optional().optional(),
-    allergy_description: import_zod2.z.string().optional().optional()
+    allergy_description: import_zod2.z.string().optional().optional(),
+    medication_use_description: import_zod2.z.string().optional().optional()
   }).strict();
   const user_id = request.user.sub;
   const {
@@ -247,7 +251,8 @@ async function updateParticipantController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   } = bodySchema.parse(request.body);
   const updateParticipant = makeUpdateParticipantUseCase();
   const { participant } = await updateParticipant.execute({
@@ -262,7 +267,8 @@ async function updateParticipantController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   });
   return reply.status(200).send({ participant });
 }
@@ -318,7 +324,8 @@ var CreateParticipantUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const userExists = await this.usersRepository.findById(user_id);
     if (!userExists)
@@ -342,7 +349,8 @@ var CreateParticipantUseCase = class {
       prayer_group,
       community_type,
       pcd_description,
-      allergy_description
+      allergy_description,
+      medication_use_description
     });
     return { participant };
   }
@@ -372,7 +380,8 @@ async function createParticipantController(request, reply) {
     prayer_group: import_zod3.z.string().optional(),
     community_type: import_zod3.z.enum(["VIDA", "ALIAN\xC7A"]).optional(),
     pcd_description: import_zod3.z.string().optional(),
-    allergy_description: import_zod3.z.string().optional()
+    allergy_description: import_zod3.z.string().optional(),
+    medication_use_description: import_zod3.z.string().optional()
   }).strict();
   const user_id = request.user.sub;
   const {
@@ -386,7 +395,8 @@ async function createParticipantController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   } = bodySchema.parse(request.body);
   const createParticipant = makeCreateParticipantUseCase();
   const { participant } = await createParticipant.execute({
@@ -401,7 +411,8 @@ async function createParticipantController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   });
   return reply.status(200).send({ participant });
 }
@@ -488,7 +499,8 @@ var RegisterParticipantingUserAndAddressUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const password_hash = await (0, import_bcryptjs.hash)(password, 6);
     const userWithSameEmail = await this.usersRepository.findByEmail(email);
@@ -526,7 +538,8 @@ var RegisterParticipantingUserAndAddressUseCase = class {
       prayer_group,
       community_type,
       pcd_description,
-      allergy_description
+      allergy_description,
+      medication_use_description
     });
     return { participant };
   }
@@ -610,7 +623,8 @@ async function registerParticipantingUserController(request, reply) {
     prayer_group: import_zod4.z.string().optional().optional(),
     community_type: import_zod4.z.enum(["VIDA", "ALIAN\xC7A"]).optional().optional(),
     pcd_description: import_zod4.z.string().optional().optional(),
-    allergy_description: import_zod4.z.string().optional().optional()
+    allergy_description: import_zod4.z.string().optional().optional(),
+    medication_use_description: import_zod4.z.string().optional().optional()
   }).strict().refine((data) => data.password === data.password_confirmation, {
     message: "Passwords don't match",
     path: ["password_confirmation"]
@@ -636,7 +650,8 @@ async function registerParticipantingUserController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   } = bodySchema.parse(request.body);
   const registerParticipantingUser = makeRegisterParticipantUserAndAddressUseCase();
   const { participant } = await registerParticipantingUser.execute({
@@ -660,7 +675,8 @@ async function registerParticipantingUserController(request, reply) {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   });
   return reply.status(200).send({ participant });
 }

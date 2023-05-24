@@ -56,7 +56,8 @@ var UpdateParticipantUseCase = class {
     prayer_group,
     community_type,
     pcd_description,
-    allergy_description
+    allergy_description,
+    medication_use_description
   }) {
     const participant = await this.participantsRepository.findByUser(user_id);
     if (!participant)
@@ -83,6 +84,8 @@ var UpdateParticipantUseCase = class {
       participant.pcd_description = pcd_description;
     if (allergy_description)
       participant.allergy_description = allergy_description;
+    if (medication_use_description)
+      participant.medication_use_description = medication_use_description;
     await this.participantsRepository.save(participant);
     return { participant };
   }
