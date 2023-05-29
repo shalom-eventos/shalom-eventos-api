@@ -20,9 +20,10 @@ export class PrismaAddressesRepository implements AddressesRepository {
   }
 
   async save(data: Address) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const address = await prisma.address.update({
       where: { id: data.id },
-      data,
+      data: dataUpdated,
     });
 
     return address;
