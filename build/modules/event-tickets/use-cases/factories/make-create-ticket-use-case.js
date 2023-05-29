@@ -87,9 +87,10 @@ var PrismaEventsRepository = class {
     return event;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const event = await prisma.event.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return event;
   }
@@ -138,9 +139,10 @@ var PrismaTicketsRepository = class {
     return ticket;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const ticket = await prisma.eventTicket.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return ticket;
   }

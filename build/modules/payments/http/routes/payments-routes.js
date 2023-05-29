@@ -154,9 +154,10 @@ var PrismaTicketsRepository = class {
     return ticket;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const ticket = await prisma.eventTicket.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return ticket;
   }
@@ -213,9 +214,10 @@ var PrismaRegistrationsRepository = class {
     return registration;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const registration = await prisma.eventRegistration.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return registration;
   }
@@ -236,9 +238,10 @@ var PrismaPaymentsRepository = class {
     return payment;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const payment = await prisma.payment.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return payment;
   }

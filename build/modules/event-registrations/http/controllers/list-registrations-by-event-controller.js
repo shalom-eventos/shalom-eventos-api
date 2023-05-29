@@ -97,9 +97,10 @@ var PrismaRegistrationsRepository = class {
     return registration;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const registration = await prisma.eventRegistration.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return registration;
   }

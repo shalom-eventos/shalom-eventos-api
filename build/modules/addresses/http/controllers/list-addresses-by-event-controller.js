@@ -61,9 +61,10 @@ var PrismaAddressesRepository = class {
     return address;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const address = await prisma.address.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return address;
   }

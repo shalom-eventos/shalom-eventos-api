@@ -99,9 +99,10 @@ var PrismaEventsRepository = class {
     return event;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const event = await prisma.event.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return event;
   }
@@ -158,9 +159,10 @@ var PrismaRegistrationsRepository = class {
     return registration;
   }
   async save(data) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const registration = await prisma.eventRegistration.update({
       where: { id: data.id },
-      data
+      data: dataUpdated
     });
     return registration;
   }
