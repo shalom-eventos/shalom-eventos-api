@@ -21,9 +21,10 @@ export class PrismaPaymentsRepository implements PaymentsRepository {
   }
 
   async save(data: Payment) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const payment = await prisma.payment.update({
       where: { id: data.id },
-      data,
+      data: dataUpdated,
     });
 
     return payment;

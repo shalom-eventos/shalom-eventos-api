@@ -37,9 +37,10 @@ export class PrismaParticipantsRepository implements ParticipantsRepository {
   }
 
   async save(data: Participant) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const participant = await prisma.participant.update({
       where: { id: data.id },
-      data,
+      data: dataUpdated,
     });
 
     return participant;

@@ -42,9 +42,10 @@ export class PrismaEventsRepository implements EventsRepository {
   }
 
   async save(data: Event) {
+    const { id, created_at, updated_at, ...dataUpdated } = data;
     const event = await prisma.event.update({
       where: { id: data.id },
-      data,
+      data: dataUpdated,
     });
 
     return event;
