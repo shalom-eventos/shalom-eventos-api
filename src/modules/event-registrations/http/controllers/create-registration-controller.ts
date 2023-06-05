@@ -17,6 +17,8 @@ export async function createRegistrationController(
       credential_name: z.string().min(5).max(18),
       event_source: z.string().optional(),
       transportation_mode: z.enum(['TRANSPORTE PRÓPRIO', 'ÔNIBUS']),
+      type: z.enum(['SERVO', 'PARTICIPANTE']),
+      has_participated_previously: z.boolean(),
       accepted_the_terms: z.boolean().refine((value) => value === true, {
         message: 'User must accept the terms',
         path: ['accepted_the_terms'],
@@ -31,6 +33,8 @@ export async function createRegistrationController(
     transportation_mode,
     accepted_the_terms,
     credential_name,
+    type,
+    has_participated_previously,
   } = bodySchema.parse(request.body);
 
   const createEventRegistration = makeCreateEventRegistrationUseCase();
@@ -42,6 +46,8 @@ export async function createRegistrationController(
     transportation_mode,
     accepted_the_terms,
     credential_name,
+    has_participated_previously,
+    type,
   });
 
   return reply.status(200).send({ registration });

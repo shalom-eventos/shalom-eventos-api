@@ -106,17 +106,19 @@ model EventTicket {
 }
 
 model EventRegistration {
-  id                  String   @id @default(uuid())
-  user_id             String
-  event_id            String
-  credential_name     String
-  event_source        String?
-  transportation_mode String
-  accepted_the_terms  Boolean
-  is_approved         Boolean  @default(false)
-  checked_in          Boolean  @default(false)
-  created_at          DateTime @default(now())
-  updated_at          DateTime @default(now()) @updatedAt
+  id                          String   @id @default(uuid())
+  user_id                     String
+  event_id                    String
+  credential_name             String
+  event_source                String?
+  transportation_mode         String
+  type                        String?
+  has_participated_previously Boolean  @default(false)
+  accepted_the_terms          Boolean
+  is_approved                 Boolean  @default(false)
+  checked_in                  Boolean  @default(false)
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime @default(now()) @updatedAt
 
   event   Event    @relation(fields: [event_id], references: [id])
   user    User     @relation(fields: [user_id], references: [id])
