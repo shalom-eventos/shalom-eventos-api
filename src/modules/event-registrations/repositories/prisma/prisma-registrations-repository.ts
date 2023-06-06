@@ -32,7 +32,7 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
       include: {
-        user: { select: { email: true, participant: true } },
+        user: { select: { email: true, participant: true, addresses: true } },
         payment: true,
         event: { include: { addresses: true } },
       },
