@@ -110,7 +110,7 @@ var PrismaRegistrationsRepository = class {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
       include: {
-        user: { select: { email: true, participant: true } },
+        user: { select: { email: true, participant: true, addresses: true } },
         payment: true,
         event: { include: { addresses: true } }
       }
@@ -181,7 +181,9 @@ var CreateEventRegistrationUseCase = class {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    has_participated_previously,
+    type
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
@@ -198,7 +200,9 @@ var CreateEventRegistrationUseCase = class {
       event_source,
       transportation_mode,
       accepted_the_terms,
-      credential_name
+      credential_name,
+      has_participated_previously,
+      type
     });
     return { registration };
   }

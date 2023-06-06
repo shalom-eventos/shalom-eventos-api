@@ -101,7 +101,7 @@ var PrismaRegistrationsRepository = class {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
       include: {
-        user: { select: { email: true, participant: true } },
+        user: { select: { email: true, participant: true, addresses: true } },
         payment: true,
         event: { include: { addresses: true } }
       }
@@ -262,6 +262,7 @@ async function exportRegistrationsController(request, reply) {
     const csvStream = csv.format({ headers: true });
     registrations.forEach((registration) => {
       const participantData = registration?.user?.participant;
+      const addressData = registration?.user?.addresses && registration?.user?.addresses.length > 0 ? registration?.user?.addresses[0] : void 0;
       csvStream.write({
         Evento: registration?.event?.title ?? "-",
         NomeCompleto: participantData?.full_name,
@@ -274,13 +275,25 @@ async function exportRegistrationsController(request, reply) {
         Idade: participantData?.birthdate ? (0, import_dayjs.default)(/* @__PURE__ */ new Date()).diff(participantData?.birthdate, "years") : "-",
         NomeResponsavel: participantData?.guardian_name,
         TelefoneResponsavel: participantData?.guardian_phone_number,
+        Rua: addressData?.street,
+        NumeroRua: addressData?.street_number,
+        Complemento: addressData?.complement,
+        Bairro: addressData?.district,
+        Cidade: addressData?.city,
+        Estado: addressData?.state,
+        CEP: addressData?.zip_code,
         GrupoOracao: participantData?.prayer_group,
         TipoComunidade: participantData?.community_type,
         PCD: participantData?.pcd_description,
         Alergias: participantData?.allergy_description,
-        Medicamento: participantData?.medication_use_description,
+        Medicamentos: participantData?.medication_use_description,
         MeioDeTransporte: registration.transportation_mode,
         ComoSoubeDoEvento: registration.event_source,
+        TipoInscricao: registration.type,
+        JaParticipouAntes: registration.has_participated_previously ? "Sim" : "N\xE3o",
+        DataInscricao: (0, import_dayjs.default)(registration.created_at).format(
+          "DD/MM/YYYY HH:mm"
+        ),
         InscricaoAprovada: registration.is_approved ? "Sim" : "N\xE3o",
         ComprovantePagamento: translatePaymentStatus(
           registration.payment?.status
@@ -380,7 +393,9 @@ var CreateEventRegistrationUseCase = class {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    has_participated_previously,
+    type
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
@@ -397,7 +412,9 @@ var CreateEventRegistrationUseCase = class {
       event_source,
       transportation_mode,
       accepted_the_terms,
-      credential_name
+      credential_name,
+      has_participated_previously,
+      type
     });
     return { registration };
   }
@@ -455,6 +472,8 @@ async function createRegistrationController(request, reply) {
     credential_name: import_zod5.z.string().min(5).max(18),
     event_source: import_zod5.z.string().optional(),
     transportation_mode: import_zod5.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
+    type: import_zod5.z.enum(["SERVO", "PARTICIPANTE"]),
+    has_participated_previously: import_zod5.z.boolean(),
     accepted_the_terms: import_zod5.z.boolean().refine((value) => value === true, {
       message: "User must accept the terms",
       path: ["accepted_the_terms"]
@@ -466,7 +485,9 @@ async function createRegistrationController(request, reply) {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    type,
+    has_participated_previously
   } = bodySchema.parse(request.body);
   const createEventRegistration = makeCreateEventRegistrationUseCase();
   const { registration } = await createEventRegistration.execute({
@@ -475,7 +496,9 @@ async function createRegistrationController(request, reply) {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    has_participated_previously,
+    type
   });
   return reply.status(200).send({ registration });
 }

@@ -132,7 +132,7 @@ var PrismaRegistrationsRepository = class {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
       include: {
-        user: { select: { email: true, participant: true } },
+        user: { select: { email: true, participant: true, addresses: true } },
         payment: true,
         event: { include: { addresses: true } }
       }
@@ -203,7 +203,9 @@ var CreateEventRegistrationUseCase = class {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    has_participated_previously,
+    type
   }) {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists)
@@ -220,7 +222,9 @@ var CreateEventRegistrationUseCase = class {
       event_source,
       transportation_mode,
       accepted_the_terms,
-      credential_name
+      credential_name,
+      has_participated_previously,
+      type
     });
     return { registration };
   }
@@ -278,6 +282,8 @@ async function createRegistrationController(request, reply) {
     credential_name: import_zod2.z.string().min(5).max(18),
     event_source: import_zod2.z.string().optional(),
     transportation_mode: import_zod2.z.enum(["TRANSPORTE PR\xD3PRIO", "\xD4NIBUS"]),
+    type: import_zod2.z.enum(["SERVO", "PARTICIPANTE"]),
+    has_participated_previously: import_zod2.z.boolean(),
     accepted_the_terms: import_zod2.z.boolean().refine((value) => value === true, {
       message: "User must accept the terms",
       path: ["accepted_the_terms"]
@@ -289,7 +295,9 @@ async function createRegistrationController(request, reply) {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    type,
+    has_participated_previously
   } = bodySchema.parse(request.body);
   const createEventRegistration = makeCreateEventRegistrationUseCase();
   const { registration } = await createEventRegistration.execute({
@@ -298,7 +306,9 @@ async function createRegistrationController(request, reply) {
     event_source,
     transportation_mode,
     accepted_the_terms,
-    credential_name
+    credential_name,
+    has_participated_previously,
+    type
   });
   return reply.status(200).send({ registration });
 }

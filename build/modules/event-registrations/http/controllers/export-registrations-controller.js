@@ -82,7 +82,7 @@ var PrismaRegistrationsRepository = class {
     const registrations = await prisma.eventRegistration.findMany({
       where: { event_id },
       include: {
-        user: { select: { email: true, participant: true } },
+        user: { select: { email: true, participant: true, addresses: true } },
         payment: true,
         event: { include: { addresses: true } }
       }
@@ -163,6 +163,7 @@ async function exportRegistrationsController(request, reply) {
     const csvStream = csv.format({ headers: true });
     registrations.forEach((registration) => {
       const participantData = registration?.user?.participant;
+      const addressData = registration?.user?.addresses && registration?.user?.addresses.length > 0 ? registration?.user?.addresses[0] : void 0;
       csvStream.write({
         Evento: registration?.event?.title ?? "-",
         NomeCompleto: participantData?.full_name,
@@ -175,13 +176,25 @@ async function exportRegistrationsController(request, reply) {
         Idade: participantData?.birthdate ? (0, import_dayjs.default)(/* @__PURE__ */ new Date()).diff(participantData?.birthdate, "years") : "-",
         NomeResponsavel: participantData?.guardian_name,
         TelefoneResponsavel: participantData?.guardian_phone_number,
+        Rua: addressData?.street,
+        NumeroRua: addressData?.street_number,
+        Complemento: addressData?.complement,
+        Bairro: addressData?.district,
+        Cidade: addressData?.city,
+        Estado: addressData?.state,
+        CEP: addressData?.zip_code,
         GrupoOracao: participantData?.prayer_group,
         TipoComunidade: participantData?.community_type,
         PCD: participantData?.pcd_description,
         Alergias: participantData?.allergy_description,
-        Medicamento: participantData?.medication_use_description,
+        Medicamentos: participantData?.medication_use_description,
         MeioDeTransporte: registration.transportation_mode,
         ComoSoubeDoEvento: registration.event_source,
+        TipoInscricao: registration.type,
+        JaParticipouAntes: registration.has_participated_previously ? "Sim" : "N\xE3o",
+        DataInscricao: (0, import_dayjs.default)(registration.created_at).format(
+          "DD/MM/YYYY HH:mm"
+        ),
         InscricaoAprovada: registration.is_approved ? "Sim" : "N\xE3o",
         ComprovantePagamento: translatePaymentStatus(
           registration.payment?.status

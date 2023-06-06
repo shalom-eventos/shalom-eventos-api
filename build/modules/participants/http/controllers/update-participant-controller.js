@@ -62,7 +62,7 @@ var PrismaParticipantsRepository = class {
   }
   async findManyWithUser() {
     const participants = await prisma.participant.findMany({
-      include: { user: true }
+      include: { user: { include: { addresses: true } } }
     });
     return participants;
   }
