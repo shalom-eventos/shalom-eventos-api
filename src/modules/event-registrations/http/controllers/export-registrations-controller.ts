@@ -29,6 +29,11 @@ export async function exportRegistrationsController(
     // Write each user as a CSV row
     registrations.forEach((registration) => {
       const participantData = registration?.user?.participant;
+      const addressData =
+        registration?.user?.addresses &&
+        registration?.user?.addresses.length > 0
+          ? registration?.user?.addresses[0]
+          : undefined;
       csvStream.write({
         Evento: registration?.event?.title ?? '-',
         NomeCompleto: participantData?.full_name,
@@ -45,13 +50,27 @@ export async function exportRegistrationsController(
           : '-',
         NomeResponsavel: participantData?.guardian_name,
         TelefoneResponsavel: participantData?.guardian_phone_number,
+        Rua: addressData?.street,
+        NumeroRua: addressData?.street_number,
+        Complemento: addressData?.complement,
+        Bairro: addressData?.district,
+        Cidade: addressData?.city,
+        Estado: addressData?.state,
+        CEP: addressData?.zip_code,
         GrupoOracao: participantData?.prayer_group,
         TipoComunidade: participantData?.community_type,
         PCD: participantData?.pcd_description,
         Alergias: participantData?.allergy_description,
-        Medicamento: participantData?.medication_use_description,
+        Medicamentos: participantData?.medication_use_description,
         MeioDeTransporte: registration.transportation_mode,
         ComoSoubeDoEvento: registration.event_source,
+        TipoInscricao: registration.type,
+        JaParticipouAntes: registration.has_participated_previously
+          ? 'Sim'
+          : 'Não',
+        DataInscricao: dayjs(registration.created_at).format(
+          'DD/MM/YYYY HH:mm'
+        ),
         InscricaoAprovada: registration.is_approved ? 'Sim' : 'Não',
         ComprovantePagamento: translatePaymentStatus(
           registration.payment?.status

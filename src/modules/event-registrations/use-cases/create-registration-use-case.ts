@@ -14,6 +14,8 @@ interface IRequest {
   event_source?: string;
   transportation_mode: string;
   accepted_the_terms: boolean;
+  type: string;
+  has_participated_previously: boolean;
 }
 
 interface IResponse {
@@ -34,6 +36,8 @@ export class CreateEventRegistrationUseCase {
     transportation_mode,
     accepted_the_terms,
     credential_name,
+    has_participated_previously,
+    type,
   }: IRequest): Promise<IResponse> {
     const eventExists = await this.eventsRepository.findById(event_id);
     if (!eventExists) throw new ResourceNotFoundError('Event');
@@ -52,6 +56,8 @@ export class CreateEventRegistrationUseCase {
       transportation_mode,
       accepted_the_terms,
       credential_name,
+      has_participated_previously,
+      type,
     });
 
     return { registration };

@@ -32,6 +32,8 @@ interface IRequest {
   pcd_description?: string;
   allergy_description?: string;
   medication_use_description?: string;
+  type: string;
+  has_participated_previously: boolean;
 }
 
 interface IResponse {

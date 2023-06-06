@@ -11,6 +11,7 @@ export type FindManyByEventResponse = EventRegistration & {
   user: {
     email: string;
     participant: Participant | null;
+    addresses: Address[];
   };
   event: Event & {
     addresses: Address[];

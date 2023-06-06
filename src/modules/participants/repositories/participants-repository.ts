@@ -1,7 +1,7 @@
-import { Prisma, Participant, User } from '@prisma/client';
+import { Prisma, Participant, User, Address } from '@prisma/client';
 
 export type ParticipantWithRelationsType = Participant & {
-  user: User;
+  user: User & { addresses: Address[] };
 };
 
 export interface ParticipantsRepository {
