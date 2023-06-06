@@ -190,7 +190,8 @@ var PrismaRegistrationsRepository = class {
         user: { select: { email: true, participant: true, addresses: true } },
         payment: true,
         event: { include: { addresses: true } }
-      }
+      },
+      orderBy: { created_at: "desc" }
     });
     return registrations;
   }
