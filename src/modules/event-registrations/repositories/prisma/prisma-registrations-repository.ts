@@ -36,6 +36,7 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
         payment: true,
         event: { include: { addresses: true } },
       },
+      orderBy: { created_at: 'desc' },
     });
 
     return registrations;
