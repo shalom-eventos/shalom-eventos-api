@@ -4,4 +4,5 @@ export interface PaymentsRepository {
   findById(id: string): Promise<Payment | null>;
   create(data: Prisma.PaymentUncheckedCreateInput): Promise<Payment>;
   save(data: Payment): Promise<Payment>;
+  delete(id: string): Promise<void>;
 }
