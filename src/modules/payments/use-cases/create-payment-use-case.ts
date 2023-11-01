@@ -31,7 +31,7 @@ export class CreatePaymentUseCase {
     price,
     file,
   }: IRequest): Promise<IResponse> {
-    const registration = await this.registrationsRepository.findByIdAndUser(
+    const registration = await this.registrationsRepository.findOneByIdAndUser(
       event_registration_id,
       user_id
     );

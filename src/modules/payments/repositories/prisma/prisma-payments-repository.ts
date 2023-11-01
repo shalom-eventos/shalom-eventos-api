@@ -29,4 +29,8 @@ export class PrismaPaymentsRepository implements PaymentsRepository {
 
     return payment;
   }
+
+  async delete(id: string) {
+    await prisma.payment.delete({ where: { id } });
+  }
 }

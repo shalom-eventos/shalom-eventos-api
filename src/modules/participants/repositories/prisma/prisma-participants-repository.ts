@@ -20,9 +20,20 @@ export class PrismaParticipantsRepository implements ParticipantsRepository {
     return participant;
   }
 
-  async findManyWithUser() {
+  async findManyWithAddresses() {
     const participants = await prisma.participant.findMany({
-      include: { user: { include: { addresses: true } } },
+      include: {
+        addresses: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            addresses: true,
+          },
+        },
+      },
     });
 
     return participants;
@@ -44,5 +55,9 @@ export class PrismaParticipantsRepository implements ParticipantsRepository {
     });
 
     return participant;
+  }
+
+  async delete(id: string) {
+    await prisma.participant.delete({ where: { id } });
   }
 }

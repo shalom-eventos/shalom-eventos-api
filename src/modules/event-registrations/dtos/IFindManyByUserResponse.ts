@@ -8,7 +8,12 @@ import {
 
 export type FindManyByUserResponse = EventRegistration & {
   payment: Payment | null;
-  user: { email: string; participant: Participant | null };
+  participant: {
+    user: {
+      email: string;
+      addresses: Address[];
+    } | null;
+  };
   event: Event & {
     addresses: Address[];
   };
