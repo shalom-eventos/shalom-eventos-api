@@ -9,11 +9,6 @@ export async function registerParticipantingUserController(
 ) {
   const bodySchema = z
     .object({
-      name: z.string(),
-      email: z.string().email(),
-      password: z.string().min(8),
-      password_confirmation: z.string().min(8),
-
       street: z.string(),
       street_number: z.string(),
       complement: z.string().optional(),
@@ -23,6 +18,7 @@ export async function registerParticipantingUserController(
       state: z.string(),
 
       full_name: z.string().min(5),
+      email: z.string().email(),
       phone_number: z.string(),
       birthdate: z.coerce.date(),
       document_number: z.string(),
@@ -34,68 +30,36 @@ export async function registerParticipantingUserController(
       pcd_description: z.string().optional().optional(),
       allergy_description: z.string().optional().optional(),
       medication_use_description: z.string().optional().optional(),
+
+      event_id: z.string().uuid(),
+      credential_name: z.string().min(5).max(18),
+      event_source: z.string().optional(),
+      transportation_mode: z.enum(['TRANSPORTE PRÓPRIO', 'ÔNIBUS']),
+      type: z.enum(['SERVO', 'PARTICIPANTE']),
+      has_participated_previously: z.coerce.boolean(),
+      accepted_the_terms: z.coerce.boolean().refine((value) => value === true, {
+        message: 'User must accept the terms',
+        path: ['accepted_the_terms'],
+      }),
+
+      payment_method: z.enum([
+        'PIX',
+        'DINHEIRO',
+        'CARTÃO DE DÉBITO',
+        'CARTÃO DE CRÉDITO',
+      ]),
+      price: z.coerce.number().positive(),
     })
-    .strict()
-    .refine((data) => data.password === data.password_confirmation, {
-      message: "Passwords don't match",
-      path: ['password_confirmation'],
-    });
+    .strict();
 
-  const {
-    name,
-    email,
-    password,
-
-    street,
-    street_number,
-    complement,
-    zip_code,
-    district,
-    city,
-    state,
-
-    full_name,
-    phone_number,
-    birthdate,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
-    community_type,
-    pcd_description,
-    allergy_description,
-    medication_use_description,
-  } = bodySchema.parse(request.body);
+  const file = request.file;
 
   const registerParticipantingUser =
     makeRegisterParticipantUserAndAddressUseCase();
 
   const { participant } = await registerParticipantingUser.execute({
-    name,
-    email,
-    password,
-
-    street,
-    street_number,
-    complement,
-    zip_code,
-    district,
-    city,
-    state,
-
-    full_name,
-    phone_number,
-    birthdate,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
-    community_type,
-    pcd_description,
-    allergy_description,
-    medication_use_description,
+    ...bodySchema.parse(request.body),
+    file: String(file.filename),
   });
 
   return reply.status(200).send({ participant });
