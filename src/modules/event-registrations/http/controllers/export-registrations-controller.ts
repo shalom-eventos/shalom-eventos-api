@@ -96,12 +96,11 @@ export async function exportRegistrationsController(
         participantData.allergy_description ?? 'Não',
         registration.has_participated_previously ? 'Sim' : 'Não',
         participantData.medication_use_description ?? 'Não',
-        registration.payment?.file,
+        `https://api.shalomsobral.com.br/files/${registration.payment?.file}`,
         registration.transportation_mode,
         registration.payment?.payment_method,
         registration.payment?.price,
         '1º Lote', //registration.payment?.event_ticket_id,
-        registration.payment?.status,
         translatePaymentStatus(registration.payment?.status),
       ];
 
