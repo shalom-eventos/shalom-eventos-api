@@ -71,9 +71,11 @@ export async function exportRegistrationsController(
       if (addressData) {
         fullAddress = `${addressData.street}, nº ${
           addressData.street_number
-        }, ${addressData.complement + ', ' ?? ''} ${addressData.district}, ${
-          addressData.city
-        } - ${addressData.state}, CEP: ${addressData.zip_code}`;
+        }, ${addressData.complement ? addressData.complement + ', ' : ''}${
+          addressData.district
+        }, ${addressData.city} - ${addressData.state}, CEP: ${
+          addressData.zip_code
+        }`;
       }
 
       const rowData = [
