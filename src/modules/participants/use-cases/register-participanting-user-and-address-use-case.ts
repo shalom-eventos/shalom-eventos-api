@@ -202,9 +202,9 @@ export class RegisterParticipantingUserAndAddressUseCase {
 
       return { participant };
     } catch (err) {
+      if (registration) this.registrationsRepository.delete(registration.id);
       if (participant) this.participantsRepository.delete(participant.id);
       if (address) this.addressesRepository.delete(address.id);
-      if (registration) this.registrationsRepository.delete(registration.id);
       if (payment) this.paymentsRepository.delete(payment.id);
       throw err;
     }
