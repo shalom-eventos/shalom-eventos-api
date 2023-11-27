@@ -48,4 +48,5 @@ jobs:
             npm install
             npx prisma migrate deploy
             npx prisma generate
+            pm2 resurrect
             pm2 restart shalom-eventos-api
