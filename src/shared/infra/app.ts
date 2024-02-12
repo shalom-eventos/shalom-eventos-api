@@ -3,7 +3,9 @@ import fastifyJwt from '@fastify/jwt';
 import fastifyCookie from '@fastify/cookie';
 import fastifyMulter from 'fastify-multer';
 import fastifyStatic from '@fastify/static';
+import { fastifyAwilixPlugin } from '@fastify/awilix';
 import cors from '@fastify/cors';
+import '../container';
 
 import uploadConfig from '@/config/upload';
 import auth from '@/config/auth';
@@ -25,7 +27,10 @@ app.register(cors, {
   // Permitir o envio de credenciais (cookies)
   credentials: true,
 });
-
+app.register(fastifyAwilixPlugin, {
+  disposeOnClose: true,
+  disposeOnResponse: true,
+});
 app.register(fastifyStatic, {
   root: uploadConfig.tmpFolder,
   prefix: '/files/',
