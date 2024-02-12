@@ -18,14 +18,14 @@ export async function updateEventController(
       slug: z.string().optional(),
       title: z.string().optional(),
       description: z.string().optional(),
-      start_date: z.coerce.date().optional(),
-      end_date: z.coerce.date().optional(),
+      startDate: z.coerce.date().optional(),
+      endDate: z.coerce.date().optional(),
     })
     .strict();
 
   const { id } = paramsSchema.parse(request.params);
 
-  const { title, description, start_date, end_date } = bodySchema.parse(
+  const { title, description, startDate, endDate } = bodySchema.parse(
     request.body
   );
 
@@ -33,8 +33,8 @@ export async function updateEventController(
   const { event } = await updateEvent.execute(id, {
     title,
     description,
-    start_date,
-    end_date,
+    startDate,
+    endDate,
   });
 
   return reply.status(200).send({ event });

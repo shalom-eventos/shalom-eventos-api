@@ -9,8 +9,8 @@ import { di } from '@/shared/lib/diContainer';
 interface Request {
   title: string;
   description?: string;
-  start_date: Date;
-  end_date?: Date;
+  startDate: Date;
+  endDate?: Date;
 }
 
 interface Response {
@@ -25,14 +25,14 @@ export class CreateEventUseCase {
   async execute({
     title,
     description,
-    start_date,
-    end_date,
+    startDate,
+    endDate,
   }: Request): Promise<Response> {
-    const endDate = end_date
-      ? end_date
-      : dayjs(start_date).endOf('date').toDate();
+    const finalEndDate = endDate
+      ? endDate
+      : dayjs(startDate).endOf('date').toDate();
 
-    if (dayjs(start_date).isAfter(end_date))
+    if (dayjs(startDate).isAfter(finalEndDate))
       throw new InvalidDateIntervalError();
 
     let slug = generateSlug({ keyword: title });
@@ -54,8 +54,8 @@ export class CreateEventUseCase {
       slug,
       title,
       description,
-      start_date,
-      end_date: endDate,
+      startDate,
+      endDate,
     });
 
     return { event };

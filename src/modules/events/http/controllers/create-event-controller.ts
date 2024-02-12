@@ -11,12 +11,12 @@ export async function createEventController(
     .object({
       title: z.string(),
       description: z.string().optional(),
-      start_date: z.coerce.date(),
-      end_date: z.coerce.date().optional(),
+      startDate: z.coerce.date(),
+      endDate: z.coerce.date().optional(),
     })
     .strict();
 
-  const { title, description, start_date, end_date } = bodySchema.parse(
+  const { title, description, startDate, endDate } = bodySchema.parse(
     request.body
   );
 
@@ -24,8 +24,8 @@ export async function createEventController(
   const { event } = await createEvent.execute({
     title,
     description,
-    start_date,
-    end_date,
+    startDate,
+    endDate,
   });
 
   return reply.status(200).send({ event });

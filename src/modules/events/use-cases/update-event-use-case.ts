@@ -12,8 +12,8 @@ interface Request {
   slug?: string;
   title?: string;
   description?: string;
-  start_date?: Date;
-  end_date?: Date;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 interface Response {
@@ -27,7 +27,7 @@ export class UpdateEventUseCase {
 
   async execute(
     id: string,
-    { slug, title, description, start_date, end_date }: Request
+    { slug, title, description, startDate, endDate }: Request
   ): Promise<Response> {
     const event = await this.eventsRepository.findById(id);
 
@@ -36,21 +36,21 @@ export class UpdateEventUseCase {
     if (title) event.title = title;
     if (description) event.description = description;
 
-    if (start_date && end_date) {
-      if (dayjs(start_date).isAfter(end_date))
+    if (startDate && endDate) {
+      if (dayjs(startDate).isAfter(endDate))
         throw new InvalidDateIntervalError();
     }
 
-    if (start_date) {
-      if (dayjs(start_date).isAfter(event.end_date))
+    if (startDate) {
+      if (dayjs(startDate).isAfter(event.endDate))
         throw new InvalidDateIntervalError();
-      event.start_date = start_date;
+      event.startDate = startDate;
     }
 
-    if (end_date) {
-      if (dayjs(end_date).isBefore(event.start_date))
+    if (endDate) {
+      if (dayjs(endDate).isBefore(event.startDate))
         throw new InvalidDateIntervalError();
-      event.end_date = end_date;
+      event.endDate = endDate;
     }
 
     if (slug) {

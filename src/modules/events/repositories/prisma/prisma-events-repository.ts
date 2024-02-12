@@ -42,7 +42,7 @@ export class PrismaEventsRepository implements EventsRepository {
   }
 
   async save(data: Event) {
-    const { id, created_at, updated_at, ...dataUpdated } = data;
+    const { id, createdAt, updatedAt, ...dataUpdated } = data;
     const event = await prisma.event.update({
       where: { id: data.id },
       data: dataUpdated,
@@ -53,11 +53,11 @@ export class PrismaEventsRepository implements EventsRepository {
 
   async findNextOne() {
     const event = await prisma.event.findFirst({
-      where: { start_date: { gte: new Date() } },
+      where: { startDate: { gte: new Date() } },
       include: {
         tickets: {
           where: {
-            expires_in: { gt: new Date() },
+            expiresAt: { gt: new Date() },
           },
         },
       },
