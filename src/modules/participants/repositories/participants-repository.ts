@@ -6,7 +6,7 @@ export type ParticipantWithRelationsType = Participant & {
 
 export interface ParticipantsRepository {
   findById(id: string): Promise<Participant | null>;
-  findByUser(user_id: string): Promise<Participant | null>;
+  findByUser(userId: string): Promise<Participant | null>;
   findManyWithAddresses(): Promise<ParticipantWithRelationsType[]>;
   create(data: Prisma.ParticipantUncheckedCreateInput): Promise<Participant>;
   save(data: Participant): Promise<Participant>;

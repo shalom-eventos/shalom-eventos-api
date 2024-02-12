@@ -12,9 +12,9 @@ export class PrismaParticipantsRepository implements ParticipantsRepository {
     return participant;
   }
 
-  async findByUser(user_id: string) {
+  async findByUser(userId: string) {
     const participant = await prisma.participant.findFirst({
-      where: { user_id },
+      where: { userId },
     });
 
     return participant;
@@ -48,7 +48,7 @@ export class PrismaParticipantsRepository implements ParticipantsRepository {
   }
 
   async save(data: Participant) {
-    const { id, created_at, updated_at, ...dataUpdated } = data;
+    const { id, createdAt, updatedAt, ...dataUpdated } = data;
     const participant = await prisma.participant.update({
       where: { id: data.id },
       data: dataUpdated,

@@ -2,20 +2,25 @@ import { Participant } from '@prisma/client';
 
 import { ParticipantsRepository } from '../repositories/participants-repository';
 import { ResourceNotFoundError } from './errors';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
-  user_id: string;
+interface Request {
+  userId: string;
 }
 
-interface IResponse {
+interface Response {
   participant: Participant;
 }
 
 export class ShowParticipantByUserUseCase {
-  constructor(private participantsRepository: ParticipantsRepository) {}
+  constructor(
+    private participantsRepository: ParticipantsRepository = di.resolve(
+      'participantsRepository'
+    )
+  ) {}
 
-  async execute({ user_id }: IRequest): Promise<IResponse> {
-    const participant = await this.participantsRepository.findByUser(user_id);
+  async execute({ userId }: Request): Promise<Response> {
+    const participant = await this.participantsRepository.findByUser(userId);
 
     if (!participant) throw new ResourceNotFoundError('Participante data');
 

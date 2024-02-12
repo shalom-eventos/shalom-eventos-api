@@ -7,72 +7,75 @@ import {
   ParticipantAlreadyRegisteredError,
   ResourceNotFoundError,
 } from './errors';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
-  user_id: string;
-  full_name: string;
-  phone_number: string;
+interface Request {
+  userId: string;
+  fullName: string;
+  phoneNumber: string;
   birthdate: Date;
-  document_number: string;
-  document_type: string;
-  guardian_name?: string;
-  guardian_phone_number?: string;
-  prayer_group?: string;
-  community_type?: string;
-  pcd_description?: string;
-  allergy_description?: string;
-  medication_use_description?: string;
+  documentNumber: string;
+  documentType: string;
+  guardianName?: string;
+  guardianPhoneNumber?: string;
+  prayerGroup?: string;
+  communityType?: string;
+  pcdDescription?: string;
+  allergyDescription?: string;
+  medicationUseDescription?: string;
 }
 
-interface IResponse {
+interface Response {
   participant: Participant;
 }
 
 export class CreateParticipantUseCase {
   constructor(
-    private participantsRepository: ParticipantsRepository,
-    private usersRepository: UsersRepository
+    private participantsRepository: ParticipantsRepository = di.resolve(
+      'participantsRepository'
+    ),
+    private usersRepository: UsersRepository = di.resolve('usersRepository')
   ) {}
 
   async execute({
-    user_id,
-    full_name,
-    phone_number,
+    userId,
+    fullName,
+    phoneNumber,
     birthdate,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
-    community_type,
-    pcd_description,
-    allergy_description,
-    medication_use_description,
-  }: IRequest): Promise<IResponse> {
-    const userExists = await this.usersRepository.findById(user_id);
+    documentNumber,
+    documentType,
+    guardianName,
+    guardianPhoneNumber,
+    prayerGroup,
+    communityType,
+    pcdDescription,
+    allergyDescription,
+    medicationUseDescription,
+  }: Request): Promise<Response> {
+    const userExists = await this.usersRepository.findById(userId);
     if (!userExists) throw new ResourceNotFoundError('User');
     if (userExists.role !== 'PARTICIPANT')
       throw new ResourceNotFoundError('User');
 
     const participantDataExists = await this.participantsRepository.findByUser(
-      user_id
+      userId
     );
     if (participantDataExists) throw new ParticipantAlreadyRegisteredError();
 
     const participant = await this.participantsRepository.create({
-      user_id,
-      full_name,
-      phone_number,
+      userId,
+      fullName,
+      phoneNumber,
       birthdate,
-      document_number,
-      document_type,
-      guardian_name,
-      guardian_phone_number,
-      prayer_group,
-      community_type,
-      pcd_description,
-      allergy_description,
-      medication_use_description,
+      documentNumber,
+      documentType,
+      guardianName,
+      guardianPhoneNumber,
+      prayerGroup,
+      communityType,
+      pcdDescription,
+      allergyDescription,
+      medicationUseDescription,
     });
 
     return { participant };

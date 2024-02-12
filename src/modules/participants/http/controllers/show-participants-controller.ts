@@ -1,16 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 
-import { makeShowParticipantByUserUseCase } from '../../use-cases/factories/make-show-participant-by-user-use-case';
+import { ShowParticipantByUserUseCase } from '../../use-cases/show-participant-by-user-use-case';
 
 export async function showParticipantController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const user_id = request.user.sub;
+  const userId = request.user.sub;
 
-  const showParticipant = makeShowParticipantByUserUseCase();
+  const showParticipant = new ShowParticipantByUserUseCase();
 
-  const { participant } = await showParticipant.execute({ user_id });
+  const { participant } = await showParticipant.execute({ userId });
 
   return reply.status(200).send({ participant });
 }

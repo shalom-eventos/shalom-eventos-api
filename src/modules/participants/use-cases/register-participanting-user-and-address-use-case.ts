@@ -17,92 +17,103 @@ import { AppError } from '@/shared/errors/app-error';
 import { PaymentsRepository } from '@/modules/payments/repositories/payments-repository';
 import { TicketsRepository } from '@/modules/event-tickets/repositories/tickets-repository';
 import { TicketNotFoundError } from '@/modules/payments/use-cases/errors';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
+interface Request {
   street: string;
-  street_number: string;
+  streetNumber: string;
   complement?: string;
-  zip_code: string;
+  zipCode: string;
   district: string;
   city: string;
   state: string;
 
-  full_name: string;
+  fullName: string;
   email: string;
-  phone_number: string;
+  phoneNumber: string;
   birthdate: Date;
-  document_number: string;
-  document_type: string;
-  guardian_name?: string;
-  guardian_phone_number?: string;
-  prayer_group?: string;
-  community_type?: string;
-  pcd_description?: string;
-  allergy_description?: string;
-  medication_use_description?: string;
+  documentNumber: string;
+  documentType: string;
+  guardianName?: string;
+  guardianPhoneNumber?: string;
+  prayerGroup?: string;
+  communityType?: string;
+  pcdDescription?: string;
+  allergyDescription?: string;
+  medicationUseDescription?: string;
 
-  event_id: string;
-  credential_name: string;
-  event_source?: string;
-  transportation_mode: string;
-  accepted_the_terms: boolean;
+  eventId: string;
+  credentialName: string;
+  eventSource?: string;
+  transportationMode: string;
+  acceptedTheTerms: boolean;
   type: string;
-  has_participated_previously: boolean;
+  hasParticipatedPreviously: boolean;
 
-  payment_method: string;
+  paymentMethod: string;
   price: number;
   file: string;
 }
 
-interface IResponse {
+interface Response {
   participant: Participant;
 }
 
 export class RegisterParticipantingUserAndAddressUseCase {
   constructor(
-    private participantsRepository: ParticipantsRepository,
-    private addressesRepository: AddressesRepository,
-    private registrationsRepository: RegistrationsRepository,
-    private eventsRepository: EventsRepository,
-    private paymentsRepository: PaymentsRepository,
-    private ticketsRepository: TicketsRepository
+    private participantsRepository: ParticipantsRepository = di.resolve(
+      'participantsRepository'
+    ),
+    private addressesRepository: AddressesRepository = di.resolve(
+      'addressesRepository'
+    ),
+    private registrationsRepository: RegistrationsRepository = di.resolve(
+      'registrationsRepository'
+    ),
+    private eventsRepository: EventsRepository = di.resolve('eventsRepository'),
+    private paymentsRepository: PaymentsRepository = di.resolve(
+      'paymentsRepository'
+    ),
+    private ticketsRepository: TicketsRepository = di.resolve(
+      'ticketsRepository'
+    )
   ) {}
 
   async execute({
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,
 
-    full_name,
+    fullName,
     email,
-    phone_number,
+    phoneNumber,
     birthdate,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
-    community_type,
-    pcd_description,
-    allergy_description,
-    medication_use_description,
+    documentNumber,
+    documentType,
+    guardianName,
+    guardianPhoneNumber,
+    prayerGroup,
+    communityType,
+    pcdDescription,
+    allergyDescription,
+    medicationUseDescription,
 
-    event_id,
-    event_source,
-    transportation_mode,
-    accepted_the_terms,
-    credential_name,
-    has_participated_previously,
+    eventId,
+    eventSource,
+    transportationMode,
+    acceptedTheTerms,
+    credentialName,
+    hasParticipatedPreviously,
     type,
 
-    payment_method,
+    paymentMethod,
     price,
     file,
-  }: IRequest) {
+  }: Request) {
     let event: Event | null;
     let participant: Participant;
     let address: Address;
@@ -110,7 +121,7 @@ export class RegisterParticipantingUserAndAddressUseCase {
     let ticket: EventTicket | null;
     let payment: Payment;
     try {
-      event = await this.eventsRepository.findById(event_id);
+      event = await this.eventsRepository.findById(eventId);
       if (!event) throw new ResourceNotFoundError('Event');
 
       const emailAlreadyRegisteredForThisEvent =
@@ -123,19 +134,19 @@ export class RegisterParticipantingUserAndAddressUseCase {
        */
 
       participant = await this.participantsRepository.create({
-        full_name,
+        fullName,
         email,
-        phone_number,
+        phoneNumber,
         birthdate,
-        document_number,
-        document_type,
-        guardian_name,
-        guardian_phone_number,
-        prayer_group,
-        community_type,
-        pcd_description,
-        allergy_description,
-        medication_use_description,
+        documentNumber,
+        documentType,
+        guardianName,
+        guardianPhoneNumber,
+        prayerGroup,
+        communityType,
+        pcdDescription,
+        allergyDescription,
+        medicationUseDescription,
       });
       /**
        * END - Create participant data
@@ -146,9 +157,9 @@ export class RegisterParticipantingUserAndAddressUseCase {
        */
       address = await this.addressesRepository.create({
         street,
-        street_number,
+        streetNumber,
         complement,
-        zip_code,
+        zipCode,
         district,
         city,
         state,
@@ -167,13 +178,13 @@ export class RegisterParticipantingUserAndAddressUseCase {
        * START - Create registration
        */
       registration = await this.registrationsRepository.create({
-        participant_id: participant.id,
-        event_id,
-        event_source,
-        transportation_mode,
-        accepted_the_terms,
-        credential_name,
-        has_participated_previously,
+        participantId: participant.id,
+        eventId,
+        eventSource,
+        transportationMode,
+        acceptedTheTerms,
+        credentialName,
+        hasParticipatedPreviously,
         type,
       });
       /**
@@ -184,14 +195,14 @@ export class RegisterParticipantingUserAndAddressUseCase {
        * START - Create payment
        */
       ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
-        registration.event_id
+        registration.eventId
       );
       if (!ticket) throw new TicketNotFoundError();
 
       payment = await this.paymentsRepository.create({
-        event_registration_id: registration.id,
-        event_ticket_id: ticket.id,
-        payment_method,
+        eventRegistrationId: registration.id,
+        eventTicketId: ticket.id,
+        paymentMethod,
         price: new Prisma.Decimal(price),
         file,
         status: 'sent',

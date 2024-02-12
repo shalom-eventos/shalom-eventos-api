@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeCreateParticipantUseCase } from '../../use-cases/factories/make-create-participant-use-case';
+import { CreateParticipantUseCase } from '../../use-cases/create-participant-use-case';
 
 export async function createParticipantController(
   request: FastifyRequest,
@@ -9,53 +9,53 @@ export async function createParticipantController(
 ) {
   const bodySchema = z
     .object({
-      full_name: z.string().min(5),
-      phone_number: z.string(),
+      fullName: z.string().min(5),
+      phoneNumber: z.string(),
       birthdate: z.coerce.date(),
-      document_number: z.string(),
-      document_type: z.enum(['CPF', 'RG']),
-      guardian_name: z.string().optional(),
-      guardian_phone_number: z.string().optional(),
-      prayer_group: z.string().optional(),
-      community_type: z.enum(['VIDA', 'ALIANÇA']).optional(),
-      pcd_description: z.string().optional(),
-      allergy_description: z.string().optional(),
-      medication_use_description: z.string().optional(),
+      documentNumber: z.string(),
+      documentType: z.enum(['CPF', 'RG']),
+      guardianName: z.string().optional(),
+      guardianPhoneNumber: z.string().optional(),
+      prayerGroup: z.string().optional(),
+      communityType: z.enum(['VIDA', 'ALIANÇA']).optional(),
+      pcdDescription: z.string().optional(),
+      allergyDescription: z.string().optional(),
+      medicationUseDescription: z.string().optional(),
     })
     .strict();
 
-  const user_id = request.user.sub;
+  const userId = request.user.sub;
   const {
-    full_name,
-    phone_number,
+    fullName,
+    phoneNumber,
     birthdate,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
-    community_type,
-    pcd_description,
-    allergy_description,
-    medication_use_description,
+    documentNumber,
+    documentType,
+    guardianName,
+    guardianPhoneNumber,
+    prayerGroup,
+    communityType,
+    pcdDescription,
+    allergyDescription,
+    medicationUseDescription,
   } = bodySchema.parse(request.body);
 
-  const createParticipant = makeCreateParticipantUseCase();
+  const createParticipant = new CreateParticipantUseCase();
 
   const { participant } = await createParticipant.execute({
-    user_id,
-    full_name,
-    phone_number,
+    userId,
+    fullName,
+    phoneNumber,
     birthdate,
-    document_number,
-    document_type,
-    guardian_name,
-    guardian_phone_number,
-    prayer_group,
-    community_type,
-    pcd_description,
-    allergy_description,
-    medication_use_description,
+    documentNumber,
+    documentType,
+    guardianName,
+    guardianPhoneNumber,
+    prayerGroup,
+    communityType,
+    pcdDescription,
+    allergyDescription,
+    medicationUseDescription,
   });
 
   return reply.status(200).send({ participant });

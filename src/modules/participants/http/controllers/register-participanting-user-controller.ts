@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeRegisterParticipantUserAndAddressUseCase } from '../../use-cases/factories/make-register-participant-user-and-address-use-case';
+import { RegisterParticipantingUserAndAddressUseCase } from '../../use-cases/register-participanting-user-and-address-use-case';
 
 export async function registerParticipantingUserController(
   request: FastifyRequest,
@@ -10,39 +10,39 @@ export async function registerParticipantingUserController(
   const bodySchema = z
     .object({
       street: z.string(),
-      street_number: z.string(),
+      streetNumber: z.string(),
       complement: z.string().optional(),
-      zip_code: z.string(),
+      zipCode: z.string(),
       district: z.string(),
       city: z.string(),
       state: z.string(),
 
-      full_name: z.string().min(5),
+      fullName: z.string().min(5),
       email: z.string().email(),
-      phone_number: z.string(),
+      phoneNumber: z.string(),
       birthdate: z.coerce.date(),
-      document_number: z.string(),
-      document_type: z.enum(['CPF', 'RG']),
-      guardian_name: z.string().optional().optional(),
-      guardian_phone_number: z.string().optional().optional(),
-      prayer_group: z.string().optional().optional(),
-      community_type: z.enum(['VIDA', 'ALIANÇA']).optional().optional(),
-      pcd_description: z.string().optional().optional(),
-      allergy_description: z.string().optional().optional(),
-      medication_use_description: z.string().optional().optional(),
+      documentNumber: z.string(),
+      documentType: z.enum(['CPF', 'RG']),
+      guardianName: z.string().optional().optional(),
+      guardianPhoneNumber: z.string().optional().optional(),
+      prayerGroup: z.string().optional().optional(),
+      communityType: z.enum(['VIDA', 'ALIANÇA']).optional().optional(),
+      pcdDescription: z.string().optional().optional(),
+      allergyDescription: z.string().optional().optional(),
+      medicationUseDescription: z.string().optional().optional(),
 
-      event_id: z.string().uuid(),
-      credential_name: z.string().min(5).max(18),
-      event_source: z.string().optional(),
-      transportation_mode: z.enum(['TRANSPORTE PRÓPRIO', 'ÔNIBUS']),
+      eventId: z.string().uuid(),
+      credentialName: z.string().min(5).max(18),
+      eventSource: z.string().optional(),
+      transportationMode: z.enum(['TRANSPORTE PRÓPRIO', 'ÔNIBUS']),
       type: z.enum(['SERVO', 'PARTICIPANTE']),
-      has_participated_previously: z.coerce.boolean(),
-      accepted_the_terms: z.coerce.boolean().refine((value) => value === true, {
+      hasParticipatedPreviously: z.coerce.boolean(),
+      acceptedTheTerms: z.coerce.boolean().refine((value) => value === true, {
         message: 'User must accept the terms',
         path: ['accepted_the_terms'],
       }),
 
-      payment_method: z.enum([
+      paymentMethod: z.enum([
         'PIX',
         'DINHEIRO',
         'CARTÃO DE DÉBITO',
@@ -55,7 +55,7 @@ export async function registerParticipantingUserController(
   const file = request.file;
 
   const registerParticipantingUser =
-    makeRegisterParticipantUserAndAddressUseCase();
+    new RegisterParticipantingUserAndAddressUseCase();
 
   const { participant } = await registerParticipantingUser.execute({
     ...bodySchema.parse(request.body),
