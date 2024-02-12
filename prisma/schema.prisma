@@ -16,13 +16,13 @@ enum Role {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  name          String
-  email         String   @unique
-  password_hash String
-  role          Role     @default(PARTICIPANT)
-  created_at    DateTime @default(now())
-  updated_at    DateTime @default(now()) @updatedAt
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(PARTICIPANT)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   addresses   Address[]    @relation("addresses_users")
   participant Participant?
@@ -31,25 +31,25 @@ model User {
 }
 
 model Participant {
-  id                         String   @id @default(uuid())
-  user_id                    String?  @unique
-  email                      String?
-  full_name                  String
-  phone_number               String
-  birthdate                  DateTime
-  document_number            String
-  document_type              String
-  guardian_name              String?
-  guardian_phone_number      String?
-  prayer_group               String?
-  community_type             String?
-  pcd_description            String?
-  allergy_description        String?
-  medication_use_description String?
-  created_at                 DateTime @default(now())
-  updated_at                 DateTime @default(now()) @updatedAt
+  id                       String   @id @default(uuid())
+  userId                   String?  @unique @map("user_id")
+  email                    String?
+  fullName                 String   @map("full_name")
+  phoneNumber              String   @map("phone_number")
+  birthdate                DateTime
+  documentNumber           String   @map("document_number")
+  documentType             String   @map("document_type")
+  guardianName             String?  @map("guardian_name")
+  guardianPhoneNumber      String?  @map("guardian_phone_number")
+  prayer_group             String?  @map("prayer_group")
+  communityType            String?  @map("community_type")
+  pcdDescription           String?  @map("pcd_description")
+  allergyDescription       String?  @map("allergy_description")
+  medicationUseDescription String?  @map("medication_use_description")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
 
-  user              User?               @relation(fields: [user_id], references: [id])
+  user              User?               @relation(fields: [userId], references: [id])
   addresses         Address[]           @relation("addresses_participants")
   EventRegistration EventRegistration[]
 
@@ -61,10 +61,10 @@ model Event {
   slug        String    @unique
   title       String
   description String?
-  start_date  DateTime
-  end_date    DateTime?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @default(now()) @updatedAt
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
 
   addresses     Address[]           @relation("addresses_events")
   tickets       EventTicket[]
@@ -74,16 +74,16 @@ model Event {
 }
 
 model Address {
-  id            String   @id @default(uuid())
-  street        String
-  street_number String
-  complement    String?
-  zip_code      String
-  district      String
-  city          String
-  state         String
-  created_at    DateTime @default(now())
-  updated_at    DateTime @default(now()) @updatedAt
+  id           String   @id @default(uuid())
+  street       String
+  streetNumber String   @map("street_number")
+  complement   String?
+  zipCode      String   @map("zip_code")
+  district     String
+  city         String
+  state        String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   events       Event[]       @relation("addresses_events")
   users        User[]        @relation("addresses_users")
@@ -93,56 +93,57 @@ model Address {
 }
 
 model EventTicket {
-  id                   String    @id @default(uuid())
-  event_id             String
-  title                String
-  price                Decimal   @db.Decimal(10, 2)
-  expires_in           DateTime?
-  external_payment_url String?
-  created_at           DateTime  @default(now())
-  updated_at           DateTime  @default(now()) @updatedAt
+  id                 String    @id @default(uuid())
+  eventId            String    @map("event_id")
+  title              String
+  price              Decimal   @db.Decimal(10, 2)
+  startsAt           DateTime? @map("starts_at")
+  expiresAt          DateTime? @map("expires_at")
+  externalPaymentUrl String?   @map("external_payment_url")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
 
-  event    Event     @relation(fields: [event_id], references: [id])
+  event    Event     @relation(fields: [eventId], references: [id])
   payments Payment[]
 
   @@map("event_tickets")
 }
 
 model EventRegistration {
-  id                          String   @id @default(uuid())
-  participant_id              String
-  event_id                    String
-  credential_name             String
-  event_source                String?
-  transportation_mode         String
-  type                        String?
-  has_participated_previously Boolean  @default(false)
-  accepted_the_terms          Boolean
-  is_approved                 Boolean  @default(false)
-  checked_in                  Boolean  @default(false)
-  created_at                  DateTime @default(now())
-  updated_at                  DateTime @default(now()) @updatedAt
+  id                        String   @id @default(uuid())
+  participantId             String   @map("participant_id")
+  eventId                   String   @map("event_id")
+  credentialName            String   @map("credential_name")
+  eventSource               String?  @map("event_source")
+  transportationMode        String   @map("transportation_mode")
+  type                      String?
+  hasParticipatedPreviously Boolean  @default(false) @map("has_participated_previously")
+  acceptedTheTerms          Boolean  @map("accepted_the_terms")
+  isApproved                Boolean  @default(false) @map("is_approved")
+  checkedIn                 Boolean  @default(false) @map("checked_in")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @default(now()) @updatedAt @map("updated_at")
 
-  event       Event       @relation(fields: [event_id], references: [id])
-  participant Participant @relation(fields: [participant_id], references: [id])
+  event       Event       @relation(fields: [eventId], references: [id])
+  participant Participant @relation(fields: [participantId], references: [id])
   payment     Payment?
 
   @@map("event_registrations")
 }
 
 model Payment {
-  id                    String   @id @default(uuid())
-  event_registration_id String   @unique
-  event_ticket_id       String
-  payment_method        String
-  price                 Decimal  @db.Decimal(10, 2)
-  file                  String?
-  status                String
-  created_at            DateTime @default(now())
-  updated_at            DateTime @default(now()) @updatedAt
+  id                  String   @id @default(uuid())
+  eventRegistrationId String   @unique @map("event_registration_id")
+  eventTicketId       String   @map("event_ticket_id")
+  paymentMethod       String   @map("payment_method")
+  price               Decimal  @db.Decimal(10, 2)
+  file                String?
+  status              String
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at")
 
-  event_registration EventRegistration @relation(fields: [event_registration_id], references: [id])
-  event_ticket       EventTicket       @relation(fields: [event_ticket_id], references: [id])
+  registrations EventRegistration @relation(fields: [eventRegistrationId], references: [id])
+  tickets       EventTicket       @relation(fields: [eventTicketId], references: [id])
 
   @@map("payments")
 }
