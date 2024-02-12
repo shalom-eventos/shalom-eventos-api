@@ -1,6 +1,7 @@
 import { prisma } from '@/shared/lib/prisma';
 import { Prisma, Event, Address } from '@prisma/client';
 import { EventsRepository } from './../events-repository';
+import { EventEntity } from '../../entites/event-entity';
 
 export class PrismaEventsRepository implements EventsRepository {
   async findById(id: string) {
@@ -41,7 +42,7 @@ export class PrismaEventsRepository implements EventsRepository {
     return event;
   }
 
-  async save(data: Event) {
+  async save(data: EventEntity) {
     const { id, created_at, updated_at, ...dataUpdated } = data;
     const event = await prisma.event.update({
       where: { id: data.id },
