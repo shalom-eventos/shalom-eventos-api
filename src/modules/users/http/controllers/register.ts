@@ -10,12 +10,12 @@ export async function register(request: FastifyRequest, reply: FastifyReply) {
       name: z.string(),
       email: z.string().email(),
       password: z.string().min(8),
-      password_confirmation: z.string().min(8),
+      passwordConfirmation: z.string().min(8),
     })
     .strict()
-    .refine((data) => data.password === data.password_confirmation, {
+    .refine((data) => data.password === data.passwordConfirmation, {
       message: "Passwords don't match",
-      path: ['password_confirmation'],
+      path: ['passwordConfirmation'],
     });
 
   const { name, email, password } = registerBodySchema.parse(request.body);

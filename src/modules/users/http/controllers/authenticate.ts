@@ -42,7 +42,7 @@ export async function authenticate(
     })
     .status(200)
     .send({
-      user: excludeFields(user, ['password_hash']),
+      user: excludeFields(user, ['passwordHash']),
       token,
     });
 }

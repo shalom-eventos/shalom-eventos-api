@@ -4,11 +4,11 @@ import { UsersRepository } from '@modules/users/repositories/users-repository';
 import { di } from '@/shared/lib/diContainer';
 import { ResourceNotFoundError } from './errors/resource-not-found-error';
 
-interface IGetUserProfileUseCaseRequest {
+interface Request {
   userId: string;
 }
 
-interface IGetUserProfileUseCaseResponse {
+interface Response {
   user: User;
 }
 
@@ -17,9 +17,7 @@ export class GetUserProfileUseCase {
     private usersRepository: UsersRepository = di.resolve('usersRepository')
   ) {}
 
-  async execute({
-    userId,
-  }: IGetUserProfileUseCaseRequest): Promise<IGetUserProfileUseCaseResponse> {
+  async execute({ userId }: Request): Promise<Response> {
     const user = await this.usersRepository.findById(userId);
 
     if (!user) throw new ResourceNotFoundError();

@@ -5,13 +5,13 @@ import { UserAlreadyExistsError } from './errors/user-already-exists-error';
 import { User } from '@prisma/client';
 import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
+interface Request {
   name: string;
   email: string;
   password: string;
 }
 
-interface IRegisterUseCaseResponse {
+interface Response {
   user: User;
 }
 
@@ -20,12 +20,8 @@ export class RegisterUseCase {
     private usersRepository: UsersRepository = di.resolve('usersRepository')
   ) {}
 
-  async execute({
-    name,
-    email,
-    password,
-  }: IRequest): Promise<IRegisterUseCaseResponse> {
-    const password_hash = await hash(password, 6);
+  async execute({ name, email, password }: Request): Promise<Response> {
+    const passwordHash = await hash(password, 6);
 
     const userWithSameEmail = await this.usersRepository.findByEmail(email);
 
@@ -36,7 +32,7 @@ export class RegisterUseCase {
     const user = await this.usersRepository.create({
       name,
       email,
-      password_hash,
+      passwordHash,
     });
 
     return { user };
