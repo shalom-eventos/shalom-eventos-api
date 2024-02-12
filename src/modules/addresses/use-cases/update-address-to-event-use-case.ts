@@ -1,49 +1,54 @@
 import { Address } from '@prisma/client';
 
+import { di } from '@/shared/lib/diContainer';
 import { AddressesRepository } from '../repositories/addresses-repository';
 import { ResourceNotFoundError } from './errors';
 
-interface IRequest {
-  event_id: string;
-  address_id: string;
+interface Request {
+  eventId: string;
+  addressId: string;
   street?: string;
-  street_number?: string;
+  streetNumber?: string;
   complement?: string;
-  zip_code?: string;
+  zipCode?: string;
   district?: string;
   city?: string;
   state?: string;
 }
 
-interface IResponse {
+interface Response {
   address: Address;
 }
 
 export class UpdateAddressToEventUseCase {
-  constructor(private addressesRepository: AddressesRepository) {}
+  constructor(
+    private addressesRepository: AddressesRepository = di.resolve(
+      'addressesRepository'
+    )
+  ) {}
 
   async execute({
-    event_id,
-    address_id,
+    eventId,
+    addressId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,
-  }: IRequest): Promise<IResponse> {
+  }: Request): Promise<Response> {
     const address = await this.addressesRepository.findByEvent(
-      address_id,
-      event_id
+      addressId,
+      eventId
     );
 
     if (!address) throw new ResourceNotFoundError('Address');
 
     if (street) address.street = street;
-    if (street_number) address.street_number = street_number;
+    if (streetNumber) address.streetNumber = streetNumber;
     if (complement) address.complement = complement;
-    if (zip_code) address.zip_code = zip_code;
+    if (zipCode) address.zipCode = zipCode;
     if (district) address.district = district;
     if (city) address.city = city;
     if (state) address.state = state;

@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeGetAddressEventUseCase } from '../../use-cases/factories/make-get-address-use-case';
+import { GetAddressUseCase } from '../../use-cases/get-address-use-case';
 
 export async function getAddressController(
   request: FastifyRequest,
@@ -15,7 +15,7 @@ export async function getAddressController(
 
   const { id } = paramsSchema.parse(request.params);
 
-  const getAddress = makeGetAddressEventUseCase();
+  const getAddress = new GetAddressUseCase();
   const { address } = await getAddress.execute({ id });
 
   return reply.status(200).send({ address });

@@ -1,43 +1,46 @@
 import { Address } from '@prisma/client';
 
+import { di } from '@/shared/lib/diContainer';
+import { UsersRepository } from '@/modules/users/repositories/users-repository';
 import { AddressesRepository } from '../repositories/addresses-repository';
 import { AlreadyHasAddressError, ResourceNotFoundError } from './errors';
-import { UsersRepository } from '@/modules/users/repositories/users-repository';
 import { UserIsNotParticipantError } from './errors/user-is-not-participant-error';
 
-interface IRequest {
-  user_id: string;
+interface Request {
+  userId: string;
   street: string;
-  street_number: string;
+  streetNumber: string;
   complement?: string;
-  zip_code: string;
+  zipCode: string;
   district: string;
   city: string;
   state: string;
 }
 
-interface IResponse {
+interface Response {
   address: Address;
 }
 
 export class CreateAddressToParticipantUseCase {
   constructor(
-    private addressesRepository: AddressesRepository,
-    private usersRepository: UsersRepository
+    private addressesRepository: AddressesRepository = di.resolve(
+      'addressesRepository'
+    ),
+    private usersRepository: UsersRepository = di.resolve('usersRepository')
   ) {}
 
   async execute({
-    user_id,
+    userId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,
-  }: IRequest): Promise<IResponse> {
+  }: Request): Promise<Response> {
     const userParticipant = await this.usersRepository.findByIdWithRelations(
-      user_id
+      userId
     );
 
     if (!userParticipant) throw new ResourceNotFoundError('User');
@@ -50,9 +53,9 @@ export class CreateAddressToParticipantUseCase {
 
     const address = await this.addressesRepository.create({
       street,
-      street_number,
+      streetNumber,
       complement,
-      zip_code,
+      zipCode,
       district,
       city,
       state,

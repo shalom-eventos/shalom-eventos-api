@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeListAddressesByEventUseCase } from '../../use-cases/factories/make-list-addresses-by-event-use-case';
+import { ListAddressesByEventUseCase } from '../../use-cases/list-addresses-by-event-use-case';
 
 export async function listAddressesByEventController(
   request: FastifyRequest,
@@ -9,14 +9,14 @@ export async function listAddressesByEventController(
 ) {
   const paramsSchema = z
     .object({
-      event_id: z.string().uuid(),
+      eventId: z.string().uuid(),
     })
     .strict();
 
-  const { event_id } = paramsSchema.parse(request.params);
+  const { eventId } = paramsSchema.parse(request.params);
 
-  const listAddresses = makeListAddressesByEventUseCase();
-  const { addresses } = await listAddresses.execute({ event_id });
+  const listAddresses = new ListAddressesByEventUseCase();
+  const { addresses } = await listAddresses.execute({ eventId });
 
   return reply.status(200).send({ addresses });
 }

@@ -1,45 +1,48 @@
 import { Address } from '@prisma/client';
 
-import { AddressesRepository } from '../repositories/addresses-repository';
-import { ResourceNotFoundError } from './errors';
+import { di } from '@/shared/lib/diContainer';
 import { UsersRepository } from '@/modules/users/repositories/users-repository';
 import { UserIsNotParticipantError } from './errors/user-is-not-participant-error';
+import { AddressesRepository } from '../repositories/addresses-repository';
+import { ResourceNotFoundError } from './errors';
 
-interface IRequest {
-  address_id: string;
-  user_id: string;
+interface Request {
+  addressId: string;
+  userId: string;
   street?: string;
-  street_number?: string;
+  streetNumber?: string;
   complement?: string;
-  zip_code?: string;
+  zipCode?: string;
   district?: string;
   city?: string;
   state?: string;
 }
 
-interface IResponse {
+interface Response {
   address: Address;
 }
 
 export class UpdateAddressToParticipantUseCase {
   constructor(
-    private addressesRepository: AddressesRepository,
-    private usersRepository: UsersRepository
+    private addressesRepository: AddressesRepository = di.resolve(
+      'addressesRepository'
+    ),
+    private usersRepository: UsersRepository = di.resolve('usersRepository')
   ) {}
 
   async execute({
-    address_id,
-    user_id,
+    addressId,
+    userId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,
-  }: IRequest): Promise<IResponse> {
+  }: Request): Promise<Response> {
     const userParticipant = await this.usersRepository.findByIdWithRelations(
-      user_id
+      userId
     );
 
     if (!userParticipant) throw new ResourceNotFoundError('User');
@@ -51,15 +54,15 @@ export class UpdateAddressToParticipantUseCase {
       throw new ResourceNotFoundError('Address');
 
     const address = userParticipant.addresses.find(
-      (address) => address.id === address_id
+      (address) => address.id === addressId
     );
 
     if (!address) throw new ResourceNotFoundError('Address');
 
     if (street) address.street = street;
-    if (street_number) address.street_number = street_number;
+    if (streetNumber) address.streetNumber = streetNumber;
     if (complement) address.complement = complement;
-    if (zip_code) address.zip_code = zip_code;
+    if (zipCode) address.zipCode = zipCode;
     if (district) address.district = district;
     if (city) address.city = city;
     if (state) address.state = state;

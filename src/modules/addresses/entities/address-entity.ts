@@ -7,9 +7,9 @@ export class AddressEntity implements Address {
   district: string;
   state: string;
   street: string;
-  street_number: string;
-  zip_code: string;
+  streetNumber: string;
+  zipCode: string;
 
-  created_at: Date;
-  updated_at: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }

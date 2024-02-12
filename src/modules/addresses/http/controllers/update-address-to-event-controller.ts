@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeUpdateAddressToEventUseCase } from '../../use-cases/factories/make-update-address-to-event-use-case';
+import { UpdateAddressToEventUseCase } from '../../use-cases/update-address-to-event-use-case';
 
 export async function updateAddressToEventController(
   request: FastifyRequest,
@@ -9,36 +9,36 @@ export async function updateAddressToEventController(
 ) {
   const paramsSchema = z
     .object({
-      address_id: z.string().uuid(),
-      event_id: z.string().uuid(),
+      addressId: z.string().uuid(),
+      eventId: z.string().uuid(),
     })
     .strict();
 
   const bodySchema = z
     .object({
       street: z.string().optional(),
-      street_number: z.string().optional(),
+      streetNumber: z.string().optional(),
       complement: z.string().optional(),
-      zip_code: z.string().optional(),
+      zipCode: z.string().optional(),
       district: z.string().optional(),
       city: z.string().optional(),
       state: z.string().optional(),
     })
     .strict();
 
-  const { address_id, event_id } = paramsSchema.parse(request.params);
+  const { addressId, eventId } = paramsSchema.parse(request.params);
 
-  const { street, street_number, complement, zip_code, district, city, state } =
+  const { street, streetNumber, complement, zipCode, district, city, state } =
     bodySchema.parse(request.body);
 
-  const updateAddress = makeUpdateAddressToEventUseCase();
+  const updateAddress = new UpdateAddressToEventUseCase();
   const { address } = await updateAddress.execute({
-    address_id,
-    event_id,
+    addressId,
+    eventId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,

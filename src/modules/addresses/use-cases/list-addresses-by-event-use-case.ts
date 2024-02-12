@@ -1,20 +1,25 @@
 import { Address } from '@prisma/client';
 
+import { di } from '@/shared/lib/diContainer';
 import { AddressesRepository } from '../repositories/addresses-repository';
 
-interface IRequest {
-  event_id: string;
+interface Request {
+  eventId: string;
 }
 
-interface IResponse {
+interface Response {
   addresses: Address[];
 }
 
 export class ListAddressesByEventUseCase {
-  constructor(private addressesRepository: AddressesRepository) {}
+  constructor(
+    private addressesRepository: AddressesRepository = di.resolve(
+      'addressesRepository'
+    )
+  ) {}
 
-  async execute({ event_id }: IRequest): Promise<IResponse> {
-    const addresses = await this.addressesRepository.findManyByEvent(event_id);
+  async execute({ eventId }: Request): Promise<Response> {
+    const addresses = await this.addressesRepository.findManyByEvent(eventId);
 
     return { addresses };
   }

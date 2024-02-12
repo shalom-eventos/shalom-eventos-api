@@ -20,7 +20,7 @@ export class PrismaAddressesRepository implements AddressesRepository {
   }
 
   async save(data: Address) {
-    const { id, created_at, updated_at, ...dataUpdated } = data;
+    const { id, createdAt, updatedAt, ...dataUpdated } = data;
     const address = await prisma.address.update({
       where: { id: data.id },
       data: dataUpdated,
@@ -29,25 +29,25 @@ export class PrismaAddressesRepository implements AddressesRepository {
     return address;
   }
 
-  async findManyByUser(user_id: string) {
+  async findManyByUser(userId: string) {
     const addresses = await prisma.address.findMany({
-      where: { users: { some: { id: user_id } } },
+      where: { users: { some: { id: userId } } },
     });
 
     return addresses;
   }
 
-  async findManyByEvent(event_id: string) {
+  async findManyByEvent(eventId: string) {
     const addresses = await prisma.address.findMany({
-      where: { events: { some: { id: event_id } } },
+      where: { events: { some: { id: eventId } } },
     });
 
     return addresses;
   }
 
-  async findByEvent(address_id: string, event_id: string) {
+  async findByEvent(addressId: string, eventId: string) {
     const address = await prisma.address.findFirst({
-      where: { id: address_id, events: { every: { id: event_id } } },
+      where: { id: addressId, events: { every: { id: eventId } } },
     });
 
     return address;

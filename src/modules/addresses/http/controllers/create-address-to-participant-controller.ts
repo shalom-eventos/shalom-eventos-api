@@ -1,35 +1,35 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { makeCreateAddressToParticipantUseCase } from '../../use-cases/factories/make-create-address-to-participant-use-case';
+import { CreateAddressToParticipantUseCase } from '../../use-cases/create-address-to-participant-use-case';
 
 export async function createAddressToParticipantController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const user_id = request?.user?.sub;
+  const userId = request?.user?.sub;
 
   const bodySchema = z
     .object({
       street: z.string(),
-      street_number: z.string(),
+      streetNumber: z.string(),
       complement: z.string().optional(),
-      zip_code: z.string(),
+      zipCode: z.string(),
       district: z.string(),
       city: z.string(),
       state: z.string(),
     })
     .strict();
 
-  const { street, street_number, complement, zip_code, district, city, state } =
+  const { street, streetNumber, complement, zipCode, district, city, state } =
     bodySchema.parse(request.body);
 
-  const createAddress = makeCreateAddressToParticipantUseCase();
+  const createAddress = new CreateAddressToParticipantUseCase();
   const { address } = await createAddress.execute({
-    user_id,
+    userId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,

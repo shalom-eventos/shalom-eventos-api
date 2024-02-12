@@ -1,41 +1,42 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
-import { makeCreateAddressToEventUseCase } from '../../use-cases/factories/make-create-address-to-event-use-case';
+import { CreateAddressToEventUseCase } from '../../use-cases/create-address-to-event-use-case';
 
 export async function createAddressToEventController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const paramsSchema = z
-    .object({
-      event_id: z.string().uuid(),
-    })
-    .strict();
-
   const bodySchema = z
     .object({
+      eventId: z.string().uuid(),
       street: z.string(),
-      street_number: z.string(),
+      streetNumber: z.string(),
       complement: z.string().optional(),
-      zip_code: z.string(),
+      zipCode: z.string(),
       district: z.string(),
       city: z.string(),
       state: z.string(),
     })
     .strict();
 
-  const { event_id } = paramsSchema.parse(request.params);
-
-  const { street, street_number, complement, zip_code, district, city, state } =
-    bodySchema.parse(request.body);
-
-  const createAddress = makeCreateAddressToEventUseCase();
-  const { address } = await createAddress.execute({
-    event_id,
+  const {
+    eventId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
+    district,
+    city,
+    state,
+  } = bodySchema.parse(request.body);
+
+  const createAddress = new CreateAddressToEventUseCase();
+  const { address } = await createAddress.execute({
+    eventId,
+    street,
+    streetNumber,
+    complement,
+    zipCode,
     district,
     city,
     state,

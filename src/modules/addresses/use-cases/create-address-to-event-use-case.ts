@@ -1,41 +1,44 @@
 import { Address } from '@prisma/client';
 
+import { di } from '@/shared/lib/diContainer';
 import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { AddressesRepository } from '../repositories/addresses-repository';
 import { AlreadyHasAddressError, ResourceNotFoundError } from './errors';
 
-interface IRequest {
-  event_id: string;
+interface Request {
+  eventId: string;
   street: string;
-  street_number: string;
+  streetNumber: string;
   complement?: string;
-  zip_code: string;
+  zipCode: string;
   district: string;
   city: string;
   state: string;
 }
 
-interface IResponse {
+interface Response {
   address: Address;
 }
 
 export class CreateAddressToEventUseCase {
   constructor(
-    private addressesRepository: AddressesRepository,
-    private eventsRepository: EventsRepository
+    private addressesRepository: AddressesRepository = di.resolve(
+      'addressesRepository'
+    ),
+    private eventsRepository: EventsRepository = di.resolve('eventsRepository')
   ) {}
 
   async execute({
-    event_id,
+    eventId,
     street,
-    street_number,
+    streetNumber,
     complement,
-    zip_code,
+    zipCode,
     district,
     city,
     state,
-  }: IRequest): Promise<IResponse> {
-    const event = await this.eventsRepository.findByIdWithRelations(event_id);
+  }: Request): Promise<Response> {
+    const event = await this.eventsRepository.findByIdWithRelations(eventId);
 
     if (!event) throw new ResourceNotFoundError('User');
 
@@ -44,9 +47,9 @@ export class CreateAddressToEventUseCase {
 
     const address = await this.addressesRepository.create({
       street,
-      street_number,
+      streetNumber,
       complement,
-      zip_code,
+      zipCode,
       district,
       city,
       state,

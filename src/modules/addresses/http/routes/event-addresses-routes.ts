@@ -8,24 +8,24 @@ import { getAddressController } from '../controllers/get-address-controller';
 import { listAddressesByEventController } from '../controllers/list-addresses-by-event-controller';
 
 export async function eventAddressesRoutes(app: FastifyInstance) {
-  app.get('/addresses/:id', getAddressController);
-
   const adminMiddlewares = {
     onRequest: [verifyJWT, verifyUserRole('ADMINISTRATOR')],
   };
 
+  app.get('/addresses/:id', adminMiddlewares, getAddressController);
+
   app.post(
-    '/addresses/event/:event_id',
+    '/addresses/event',
     adminMiddlewares,
     createAddressToEventController
   );
   app.put(
-    '/addresses/:address_id/event/:event_id',
+    '/addresses/:addressId/event/:eventId',
     adminMiddlewares,
     updateAddressToEventController
   );
   app.get(
-    '/addresses/event/:event_id',
+    '/addresses/event/:eventId',
     adminMiddlewares,
     listAddressesByEventController
   );
