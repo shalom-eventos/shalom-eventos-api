@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeCreateEventUseCase } from '@modules/events/use-cases/factories/make-create-event-use-case';
+import { CreateEventUseCase } from '@modules/events/use-cases/create-event-use-case';
 
 export async function createEventController(
   request: FastifyRequest,
@@ -20,7 +20,7 @@ export async function createEventController(
     request.body
   );
 
-  const createEvent = makeCreateEventUseCase();
+  const createEvent = new CreateEventUseCase();
   const { event } = await createEvent.execute({
     title,
     description,

@@ -4,27 +4,30 @@ import { Event } from '@prisma/client';
 import { EventsRepository } from '../repositories/events-repository';
 import { InvalidDateIntervalError } from './errors/invalid-date-interval-error';
 import { generateSlug } from '@/shared/utils/generate-slug';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
+interface Request {
   title: string;
   description?: string;
   start_date: Date;
   end_date?: Date;
 }
 
-interface IResponse {
+interface Response {
   event: Event;
 }
 
 export class CreateEventUseCase {
-  constructor(private eventsRepository: EventsRepository) {}
+  constructor(
+    private eventsRepository: EventsRepository = di.resolve('eventsRepository')
+  ) {}
 
   async execute({
     title,
     description,
     start_date,
     end_date,
-  }: IRequest): Promise<IResponse> {
+  }: Request): Promise<Response> {
     const endDate = end_date
       ? end_date
       : dayjs(start_date).endOf('date').toDate();

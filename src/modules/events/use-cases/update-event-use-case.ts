@@ -1,13 +1,14 @@
 import dayjs from 'dayjs';
 import { Event } from '@prisma/client';
 
+import { di } from '@/shared/lib/diContainer';
 import { generateSlug } from '@/shared/utils/generate-slug';
 import { EventsRepository } from '../repositories/events-repository';
 import { InvalidDateIntervalError } from './errors/invalid-date-interval-error';
 import { ResourceNotFoundError } from './errors/resource-not-found-error';
 import { SlugExistsError } from './errors/slug-exists-error';
 
-interface IRequest {
+interface Request {
   slug?: string;
   title?: string;
   description?: string;
@@ -15,17 +16,19 @@ interface IRequest {
   end_date?: Date;
 }
 
-interface IResponse {
+interface Response {
   event: Event;
 }
 
 export class UpdateEventUseCase {
-  constructor(private eventsRepository: EventsRepository) {}
+  constructor(
+    private eventsRepository: EventsRepository = di.resolve('eventsRepository')
+  ) {}
 
   async execute(
     id: string,
-    { slug, title, description, start_date, end_date }: IRequest
-  ): Promise<IResponse> {
+    { slug, title, description, start_date, end_date }: Request
+  ): Promise<Response> {
     const event = await this.eventsRepository.findById(id);
 
     if (!event) throw new ResourceNotFoundError();

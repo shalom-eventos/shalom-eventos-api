@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeGetEventEventUseCase } from '@/modules/events/use-cases/factories/make-get-event-use-case';
+import { GetEventUseCase } from '@/modules/events/use-cases/get-event-use-case';
 
 export async function getEventController(
   request: FastifyRequest,
@@ -15,7 +15,7 @@ export async function getEventController(
 
   const { id } = paramsSchema.parse(request.params);
 
-  const getEvent = makeGetEventEventUseCase();
+  const getEvent = new GetEventUseCase();
   const { event } = await getEvent.execute({ id });
 
   return reply.status(200).send({ event });

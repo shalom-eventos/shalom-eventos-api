@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeUpdateEventUseCase } from '@/modules/events/use-cases/factories/make-update-event-use-case';
+import { UpdateEventUseCase } from '@/modules/events/use-cases/update-event-use-case';
 
 export async function updateEventController(
   request: FastifyRequest,
@@ -29,7 +29,7 @@ export async function updateEventController(
     request.body
   );
 
-  const updateEvent = makeUpdateEventUseCase();
+  const updateEvent = new UpdateEventUseCase();
   const { event } = await updateEvent.execute(id, {
     title,
     description,
