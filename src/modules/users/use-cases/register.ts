@@ -3,6 +3,7 @@ import { hash } from 'bcryptjs';
 import { UsersRepository } from '@modules/users/repositories/users-repository';
 import { UserAlreadyExistsError } from './errors/user-already-exists-error';
 import { User } from '@prisma/client';
+import { di } from '@/shared/lib/diContainer';
 
 interface IRequest {
   name: string;
@@ -15,7 +16,9 @@ interface IRegisterUseCaseResponse {
 }
 
 export class RegisterUseCase {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private usersRepository: UsersRepository = di.resolve('usersRepository')
+  ) {}
 
   async execute({
     name,

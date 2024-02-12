@@ -1,8 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeAuthenticateUseCase } from '@modules/users/use-cases/factories/make-authenticate-use-case';
 import { excludeFields } from '@/shared/utils/exclude-fields';
+import { AuthenticateUseCase } from '../../use-cases/authenticate';
 
 export async function authenticate(
   request: FastifyRequest,
@@ -15,7 +15,7 @@ export async function authenticate(
 
   const { email, password } = authenticateBodySchema.parse(request.body);
 
-  const authenticateUseCase = makeAuthenticateUseCase();
+  const authenticateUseCase = new AuthenticateUseCase();
   const { user } = await authenticateUseCase.execute({
     email,
     password,

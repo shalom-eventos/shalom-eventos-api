@@ -3,6 +3,7 @@ import { User } from '@prisma/client';
 
 import { UsersRepository } from '@modules/users/repositories/users-repository';
 import { InvalidCredentialsError } from './errors/invalid-credentials-error';
+import { di } from '@/shared/lib/diContainer';
 
 interface IAuthenticateUseCaseRequest {
   email: string;
@@ -14,7 +15,9 @@ interface IAuthenticateUseCaseResponse {
 }
 
 export class AuthenticateUseCase {
-  constructor(private usersRepository: UsersRepository) {}
+  constructor(
+    private usersRepository: UsersRepository = di.resolve('usersRepository')
+  ) {}
 
   async execute({
     email,
