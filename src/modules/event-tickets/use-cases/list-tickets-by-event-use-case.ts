@@ -1,20 +1,25 @@
 import { EventTicket } from '@prisma/client';
 
 import { TicketsRepository } from '../repositories/tickets-repository';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
-  event_id: string;
+interface Request {
+  eventId: string;
 }
 
-interface IResponse {
+interface Response {
   tickets: EventTicket[];
 }
 
 export class ListTicketsByEventUseCase {
-  constructor(private eventTicketsRepository: TicketsRepository) {}
+  constructor(
+    private eventTicketsRepository: TicketsRepository = di.resolve(
+      'ticketsRepository'
+    )
+  ) {}
 
-  async execute({ event_id }: IRequest): Promise<IResponse> {
-    const tickets = await this.eventTicketsRepository.findManyByEvent(event_id);
+  async execute({ eventId }: Request): Promise<Response> {
+    const tickets = await this.eventTicketsRepository.findManyByEvent(eventId);
 
     return { tickets };
   }

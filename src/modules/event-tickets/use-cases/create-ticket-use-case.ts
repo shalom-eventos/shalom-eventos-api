@@ -7,41 +7,47 @@ import {
   EventNotFoundError,
   ExpiresInCannotBeAfterEventEndDateError,
 } from './errors';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
-  event_id: string;
+interface Request {
+  eventId: string;
   title: string;
   price: number;
-  expires_in?: Date;
+  startsAt?: Date;
+  expiresAt?: Date;
 }
 
-interface IResponse {
+interface Response {
   ticket: EventTicket;
 }
 
 export class CreateTicketUseCase {
   constructor(
-    private ticketsRepository: TicketsRepository,
-    private eventsRepository: EventsRepository
+    private ticketsRepository: TicketsRepository = di.resolve(
+      'ticketsRepository'
+    ),
+    private eventsRepository: EventsRepository = di.resolve('eventsRepository')
   ) {}
 
   async execute({
-    event_id,
+    eventId,
     title,
     price,
-    expires_in,
-  }: IRequest): Promise<IResponse> {
-    const eventExists = await this.eventsRepository.findById(event_id);
+    startsAt,
+    expiresAt,
+  }: Request): Promise<Response> {
+    const eventExists = await this.eventsRepository.findById(eventId);
     if (!eventExists) throw new EventNotFoundError();
 
-    if (dayjs(expires_in).isAfter(eventExists.end_date))
+    if (dayjs(expiresAt).isAfter(eventExists.endDate))
       throw new ExpiresInCannotBeAfterEventEndDateError();
 
     const ticket = await this.ticketsRepository.create({
-      event_id,
+      eventId,
       title,
       price,
-      expires_in,
+      startsAt,
+      expiresAt,
     });
 
     return { ticket };

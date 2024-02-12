@@ -1,22 +1,22 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeListTicketsByEventUseCase } from '../../use-cases/factories/make-list-tickets-by-event-use-case';
+import { ListTicketsByEventUseCase } from '../../use-cases/list-tickets-by-event-use-case';
 
 export async function listTicketsByEventController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const paramsSchema = z
+  const querySchema = z
     .object({
-      event_id: z.string().uuid(),
+      eventId: z.string().uuid(),
     })
     .strict();
 
-  const { event_id } = paramsSchema.parse(request.params);
+  const { eventId } = querySchema.parse(request.query);
 
-  const listTickets = makeListTicketsByEventUseCase();
-  const { tickets } = await listTickets.execute({ event_id });
+  const listTickets = new ListTicketsByEventUseCase();
+  const { tickets } = await listTickets.execute({ eventId });
 
   return reply.status(200).send({ tickets });
 }

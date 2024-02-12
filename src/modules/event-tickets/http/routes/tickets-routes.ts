@@ -8,12 +8,12 @@ import { listTicketsByEventController } from '../controllers/list-tickets-by-eve
 import { updateTicketController } from '../controllers/update-ticket-controller';
 
 export async function ticketsRoutes(app: FastifyInstance) {
-  app.get('/tickets/event/:event_id', listTicketsByEventController);
+  app.get('/tickets', listTicketsByEventController);
 
   const middlewares = {
     onRequest: [verifyJWT, verifyUserRole('ADMINISTRATOR')],
   };
 
-  app.post('/tickets/event/:event_id', middlewares, createTicketController);
+  app.post('/tickets', middlewares, createTicketController);
   app.put('/tickets/:id', middlewares, updateTicketController);
 }

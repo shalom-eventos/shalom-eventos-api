@@ -17,7 +17,7 @@ export class PrismaTicketsRepository implements TicketsRepository {
       where: {
         id,
         event: {
-          end_date: {
+          endDate: {
             gt: new Date(),
           },
         },
@@ -28,21 +28,21 @@ export class PrismaTicketsRepository implements TicketsRepository {
   }
 
   async findFirstNotExpiredByEvent(
-    event_id: string
+    eventId: string
   ): Promise<EventTicket | null> {
     const ticket = await prisma.eventTicket.findFirst({
       where: {
-        event_id,
-        expires_in: { gt: new Date() },
+        eventId,
+        expiresAt: { gt: new Date() },
       },
     });
 
     return ticket;
   }
 
-  async findManyByEvent(event_id: string) {
+  async findManyByEvent(eventId: string) {
     const ticket = await prisma.eventTicket.findMany({
-      where: { event_id },
+      where: { eventId },
     });
 
     return ticket;
@@ -57,7 +57,7 @@ export class PrismaTicketsRepository implements TicketsRepository {
   }
 
   async save(data: EventTicket) {
-    const { id, created_at, updated_at, ...dataUpdated } = data;
+    const { id, createdAt, updatedAt, ...dataUpdated } = data;
     const ticket = await prisma.eventTicket.update({
       where: { id: data.id },
       data: dataUpdated,
