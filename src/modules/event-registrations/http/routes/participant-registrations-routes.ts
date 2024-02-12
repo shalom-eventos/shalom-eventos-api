@@ -12,7 +12,7 @@ export async function participantRegistrationsRoutes(app: FastifyInstance) {
   };
 
   app.post(
-    '/registrations/event/:event_id',
+    '/registrations',
     participantMiddlewares,
     createRegistrationController
   );

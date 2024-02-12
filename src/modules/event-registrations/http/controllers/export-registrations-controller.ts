@@ -1,26 +1,26 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import dayjs from 'dayjs';
+import { dayjs } from '@/shared/lib/dayjs';
 import { z } from 'zod';
 import * as XLSX from 'xlsx';
 
 import { translatePaymentStatus } from '@/shared/utils/translate-payment-status';
-import { makeListRegistrationsByEventUseCase } from '../../use-cases/factories/make-list-registrations-by-event-use-case';
+import { ListRegistrationsByEventUseCase } from '../../use-cases/list-registrations-by-event-use-case';
 
 export async function exportRegistrationsController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const paramsSchema = z
+  const querySchema = z
     .object({
-      event_id: z.string().uuid(),
+      eventId: z.string().uuid(),
     })
     .strict();
 
-  const { event_id } = paramsSchema.parse(request.params);
+  const { eventId } = querySchema.parse(request.query);
 
   try {
-    const listRegistrations = makeListRegistrationsByEventUseCase();
-    const { registrations } = await listRegistrations.execute({ event_id });
+    const listRegistrations = new ListRegistrationsByEventUseCase();
+    const { registrations } = await listRegistrations.execute({ eventId });
 
     // Create a workbook and add a worksheet
     const wb = XLSX.utils.book_new();
@@ -70,40 +70,38 @@ export async function exportRegistrationsController(
       }
 
       if (addressData) {
-        fullAddress = `${addressData.street}, nº ${
-          addressData.street_number
-        }, ${addressData.complement ? addressData.complement + ', ' : ''}${
-          addressData.district
-        }, ${addressData.city} - ${addressData.state}, CEP: ${
-          addressData.zip_code
-        }`;
+        fullAddress = `${addressData.street}, nº ${addressData.streetNumber}, ${
+          addressData.complement ? addressData.complement + ', ' : ''
+        }${addressData.district}, ${addressData.city} - ${
+          addressData.state
+        }, CEP: ${addressData.zipCode}`;
       }
 
       const rowData = [
-        dayjs(registration.created_at).format('DD/MM/YYYY HH:mm'),
+        dayjs(registration.createdAt).utc().format('DD/MM/YYYY HH:mm'),
         registration.type,
-        participantData.full_name,
-        registration.credential_name,
+        participantData.fullName,
+        registration.credentialName,
         participantData.email,
-        participantData.phone_number,
+        participantData.phoneNumber,
         participantData?.birthdate
-          ? dayjs(new Date()).diff(participantData?.birthdate, 'years')
+          ? dayjs(new Date()).utc().diff(participantData?.birthdate, 'years')
           : '-',
-        participantData.document_number,
-        participantData.document_type,
-        dayjs(participantData?.birthdate).format('DD/MM/YYYY'),
+        participantData.documentNumber,
+        participantData.documentType,
+        dayjs(participantData?.birthdate).utc().format('DD/MM/YYYY'),
         addressData?.city ?? '-',
         fullAddress,
-        participantData.prayer_group ?? '-',
-        participantData.pcd_description ?? 'Não',
-        participantData.allergy_description ?? 'Não',
-        registration.has_participated_previously ? 'Sim' : 'Não',
-        participantData.medication_use_description ?? 'Não',
+        participantData.prayerGroup ?? '-',
+        participantData.pcdDescription ?? 'Não',
+        participantData.allergyDescription ?? 'Não',
+        registration.hasParticipatedPreviously ? 'Sim' : 'Não',
+        participantData.medicationUseDescription ?? 'Não',
         `https://api.shalomsobral.com.br/files/${registration.payment?.file}`,
-        registration.transportation_mode,
-        registration.payment?.payment_method,
+        registration.transportationMode,
+        registration.payment?.paymentMethod,
         registration.payment?.price,
-        '1º Lote', //registration.payment?.event_ticket_id,
+        '1º Lote', //registration.payment?.eventTicketId,
         translatePaymentStatus(registration.payment?.status),
       ];
 

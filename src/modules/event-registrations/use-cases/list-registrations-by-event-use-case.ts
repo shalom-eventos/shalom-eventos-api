@@ -1,22 +1,25 @@
-import { EventRegistration } from '@prisma/client';
-
 import { RegistrationsRepository } from '../repositories/registrations-repository';
-import { FindManyByEventResponse } from '../dtos/IFindManyByEventResponse';
+import { FindManyByEventResponseDto } from '../dtos/find-many-by-event-response-dto';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
-  event_id: string;
+interface Request {
+  eventId: string;
 }
 
-interface IResponse {
-  registrations: FindManyByEventResponse[];
+interface Response {
+  registrations: FindManyByEventResponseDto[];
 }
 
 export class ListRegistrationsByEventUseCase {
-  constructor(private registrationsRepository: RegistrationsRepository) {}
+  constructor(
+    private registrationsRepository: RegistrationsRepository = di.resolve(
+      'registrationsRepository'
+    )
+  ) {}
 
-  async execute({ event_id }: IRequest): Promise<IResponse> {
+  async execute({ eventId }: Request): Promise<Response> {
     const registrations = await this.registrationsRepository.findManyByEvent(
-      event_id
+      eventId
     );
 
     return { registrations };

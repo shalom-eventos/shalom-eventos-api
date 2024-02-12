@@ -13,7 +13,7 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
   }
 
   async save(data: EventRegistration) {
-    const { id, created_at, updated_at, ...dataUpdated } = data;
+    const { id, createdAt, updatedAt, ...dataUpdated } = data;
     const registration = await prisma.eventRegistration.update({
       where: { id: data.id },
       data: dataUpdated,
@@ -30,25 +30,25 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
     return registration;
   }
 
-  async findOneByEventAndUser(event_id: string, user_id: string) {
+  async findOneByEventAndUser(eventId: string, userId: string) {
     const registration = await prisma.eventRegistration.findFirst({
-      where: { event_id, participant: { user_id } },
+      where: { eventId, participant: { userId } },
     });
 
     return registration;
   }
 
-  async findOneByIdAndUser(id: string, user_id: string) {
+  async findOneByIdAndUser(id: string, userId: string) {
     const registration = await prisma.eventRegistration.findFirst({
-      where: { id, participant: { user_id } },
+      where: { id, participant: { userId } },
     });
 
     return registration;
   }
 
-  async findManyByEvent(event_id: string) {
+  async findManyByEvent(eventId: string) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { event_id },
+      where: { eventId },
       include: {
         participant: {
           include: {
@@ -64,15 +64,15 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
         payment: true,
         event: { include: { addresses: true } },
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     return registrations;
   }
 
-  async findManyByUser(user_id: string) {
+  async findManyByUser(userId: string) {
     const registrations = await prisma.eventRegistration.findMany({
-      where: { participant: { user_id } },
+      where: { participant: { userId } },
       include: {
         participant: {
           include: {

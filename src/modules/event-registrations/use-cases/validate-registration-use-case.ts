@@ -1,25 +1,33 @@
 import { EventRegistration } from '@prisma/client';
+
+import { di } from '@/shared/lib/diContainer';
 import { ResourceNotFoundError } from './errors';
 import { RegistrationsRepository } from '../repositories/registrations-repository';
 
-interface IRequest {
-  registration_id: string;
+interface Request {
+  registrationId: string;
 }
 
-interface IResponse {
+interface Response {
   registration: EventRegistration;
 }
 
 export class ValidateRegistrationUseCase {
-  constructor(private registrationsRepository: RegistrationsRepository) {}
+  constructor(
+    private registrationsRepository: RegistrationsRepository = di.resolve(
+      'registrationsRepository'
+    )
+  ) {}
 
-  async execute({ registration_id }: IRequest): Promise<IResponse> {
+  async execute({
+    registrationId: registration_id,
+  }: Request): Promise<Response> {
     const registration = await this.registrationsRepository.findOneById(
       registration_id
     );
     if (!registration) throw new ResourceNotFoundError('Registration');
 
-    registration.is_approved = !registration.is_approved;
+    registration.isApproved = !registration.isApproved;
 
     await this.registrationsRepository.save(registration);
 

@@ -1,6 +1,6 @@
 import { Prisma, EventRegistration } from '@prisma/client';
-import { FindManyByEventResponse } from '../dtos/IFindManyByEventResponse';
-import { FindManyByUserResponse } from '../dtos/IFindManyByUserResponse';
+import { FindManyByEventResponseDto } from '../dtos/find-many-by-event-response-dto';
+import { FindManyByUserResponseDto } from '../dtos/find-many-by-user-response-dto';
 
 export interface RegistrationsRepository {
   create(
@@ -10,14 +10,14 @@ export interface RegistrationsRepository {
   findOneById(id: string): Promise<EventRegistration | null>;
   findOneByIdAndUser(
     id: string,
-    user_id: string
+    userId: string
   ): Promise<EventRegistration | null>;
   findOneByEventAndUser(
-    event_id: string,
-    user_id: string
+    eventId: string,
+    userId: string
   ): Promise<EventRegistration | null>;
-  findManyByEvent(event_id: string): Promise<FindManyByEventResponse[]>;
-  findManyByUser(user_id: string): Promise<FindManyByUserResponse[]>;
+  findManyByEvent(eventId: string): Promise<FindManyByEventResponseDto[]>;
+  findManyByUser(userId: string): Promise<FindManyByUserResponseDto[]>;
   findOneByParticipantEmail(email: string): Promise<EventRegistration | null>;
   delete(id: string): Promise<void>;
 }

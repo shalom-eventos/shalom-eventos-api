@@ -1,18 +1,17 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
 
-import { makeListRegistrationsByUserUseCase } from '../../use-cases/factories/make-list-registrations-by-user-use-case';
+import { ListRegistrationsByUserUseCase } from '../../use-cases/list-registrations-by-user-use-case';
 
 export async function listRegistrationsByUserController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const user_id = request.user.sub;
+  const userId = request.user.sub;
 
-  const listRegistrationsByUser = makeListRegistrationsByUserUseCase();
+  const listRegistrationsByUser = new ListRegistrationsByUserUseCase();
 
   const { registrations } = await listRegistrationsByUser.execute({
-    user_id,
+    userId,
   });
 
   return reply.status(200).send({ registrations });

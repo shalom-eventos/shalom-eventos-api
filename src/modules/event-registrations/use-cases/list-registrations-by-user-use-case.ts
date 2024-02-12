@@ -1,21 +1,26 @@
 import { EventRegistration } from '@prisma/client';
 
+import { di } from '@/shared/lib/diContainer';
 import { RegistrationsRepository } from '../repositories/registrations-repository';
 
-interface IRequest {
-  user_id: string;
+interface Request {
+  userId: string;
 }
 
-interface IResponse {
+interface Response {
   registrations: EventRegistration[];
 }
 
 export class ListRegistrationsByUserUseCase {
-  constructor(private registrationsRepository: RegistrationsRepository) {}
+  constructor(
+    private registrationsRepository: RegistrationsRepository = di.resolve(
+      'registrationsRepository'
+    )
+  ) {}
 
-  async execute({ user_id }: IRequest): Promise<IResponse> {
+  async execute({ userId }: Request): Promise<Response> {
     const registrations = await this.registrationsRepository.findManyByUser(
-      user_id
+      userId
     );
 
     return { registrations };

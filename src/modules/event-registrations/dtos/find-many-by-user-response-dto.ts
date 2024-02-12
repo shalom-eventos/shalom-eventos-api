@@ -6,7 +6,7 @@ import {
   Event,
 } from '@prisma/client';
 
-export type FindManyByUserResponse = EventRegistration & {
+export type FindManyByUserResponseDto = EventRegistration & {
   payment: Payment | null;
   participant: {
     user: {

@@ -1,4 +1,4 @@
-import { EventRegistration, Participant } from '@prisma/client';
+import { EventRegistration } from '@prisma/client';
 
 import { EventsRepository } from '@/modules/events/repositories/events-repository';
 import { UsersRepository } from '@/modules/users/repositories/users-repository';
@@ -7,65 +7,67 @@ import { RegistrationsRepository } from '../repositories/registrations-repositor
 import { ResourceNotFoundError } from './errors';
 import { UserAlreadyRegisteredError } from './errors/user-already-registered-error';
 import { ParticipantsRepository } from '@/modules/participants/repositories/participants-repository';
+import { di } from '@/shared/lib/diContainer';
 
-interface IRequest {
-  user_id: string;
-  event_id: string;
-  credential_name: string;
-  event_source?: string;
-  transportation_mode: string;
-  accepted_the_terms: boolean;
+interface Request {
+  userId: string;
+  eventId: string;
+  credentialName: string;
+  eventSource?: string;
+  transportationMode: string;
+  acceptedTheTerms: boolean;
   type: string;
-  has_participated_previously: boolean;
+  hasParticipatedPreviously: boolean;
 }
 
-interface IResponse {
+interface Response {
   registration: EventRegistration;
 }
 
 export class CreateEventRegistrationUseCase {
   constructor(
-    private registrationsRepository: RegistrationsRepository,
-    private eventsRepository: EventsRepository,
-    private usersRepository: UsersRepository,
-    private participantRepository: ParticipantsRepository
+    private registrationsRepository: RegistrationsRepository = di.resolve(
+      'registrationsRepository'
+    ),
+    private eventsRepository: EventsRepository = di.resolve('eventsRepository'),
+    private usersRepository: UsersRepository = di.resolve('usersRepository'),
+    private participantsRepository: ParticipantsRepository = di.resolve(
+      'participantsRepository'
+    )
   ) {}
 
   async execute({
-    user_id,
-    event_id,
-    event_source,
-    transportation_mode,
-    accepted_the_terms,
-    credential_name,
-    has_participated_previously,
+    userId,
+    eventId,
+    eventSource,
+    transportationMode,
+    acceptedTheTerms,
+    credentialName,
+    hasParticipatedPreviously,
     type,
-  }: IRequest): Promise<IResponse> {
-    const eventExists = await this.eventsRepository.findById(event_id);
+  }: Request): Promise<Response> {
+    const eventExists = await this.eventsRepository.findById(eventId);
     if (!eventExists) throw new ResourceNotFoundError('Event');
 
-    const userExists = await this.usersRepository.findById(user_id);
+    const userExists = await this.usersRepository.findById(userId);
     if (!userExists || userExists.role !== 'PARTICIPANT')
       throw new ResourceNotFoundError('User');
 
-    const participant = await this.participantRepository.findByUser(user_id);
+    const participant = await this.participantsRepository.findByUser(userId);
     if (!participant) throw new ResourceNotFoundError('Participant');
 
     const registrationExits =
-      await this.registrationsRepository.findOneByEventAndUser(
-        event_id,
-        user_id
-      );
+      await this.registrationsRepository.findOneByEventAndUser(eventId, userId);
     if (registrationExits) throw new UserAlreadyRegisteredError();
 
     const registration = await this.registrationsRepository.create({
-      participant_id: participant.id,
-      event_id,
-      event_source,
-      transportation_mode,
-      accepted_the_terms,
-      credential_name,
-      has_participated_previously,
+      participantId: participant.id,
+      eventId,
+      eventSource,
+      transportationMode,
+      acceptedTheTerms,
+      credentialName,
+      hasParticipatedPreviously,
       type,
     });
 

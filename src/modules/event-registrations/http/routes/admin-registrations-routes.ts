@@ -13,18 +13,18 @@ export async function adminRegistrationsRoutes(app: FastifyInstance) {
   };
 
   app.get(
-    '/registrations/export/event/:event_id',
+    '/registrations/export',
     adminMiddlewares,
     exportRegistrationsController
   );
 
   app.get(
-    '/registrations/event/:event_id',
+    '/registrations',
     adminMiddlewares,
     listRegistrationsByEventController
   );
   app.patch(
-    '/registrations/:registration_id/approve',
+    '/registrations/:registrationId/approve',
     adminMiddlewares,
     validateRegistrationController
   );

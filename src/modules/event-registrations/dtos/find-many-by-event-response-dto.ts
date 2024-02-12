@@ -6,7 +6,7 @@ import {
   Address,
 } from '@prisma/client';
 
-export type FindManyByEventResponse = EventRegistration & {
+export type FindManyByEventResponseDto = EventRegistration & {
   payment: Payment | null;
   participant: Participant & {
     addresses: Address[];

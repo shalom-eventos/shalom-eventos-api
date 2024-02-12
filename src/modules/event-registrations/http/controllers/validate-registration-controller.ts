@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { makeValidateRegistrationUseCase } from '../../use-cases/factories/make-validate-registration-use-case';
+import { ValidateRegistrationUseCase } from '../../use-cases/validate-registration-use-case';
 
 export async function validateRegistrationController(
   request: FastifyRequest,
@@ -9,16 +9,16 @@ export async function validateRegistrationController(
 ) {
   const paramsSchema = z
     .object({
-      registration_id: z.string().uuid(),
+      registrationId: z.string().uuid(),
     })
     .strict();
 
-  const { registration_id } = paramsSchema.parse(request.params);
+  const { registrationId } = paramsSchema.parse(request.params);
 
-  const validateRegistration = makeValidateRegistrationUseCase();
+  const validateRegistration = new ValidateRegistrationUseCase();
 
   const { registration } = await validateRegistration.execute({
-    registration_id,
+    registrationId: registrationId,
   });
 
   return reply.status(200).send({ registration });
