@@ -1,3 +1,4 @@
+import { AddressEntity } from '@/modules/addresses/entities/address-entity';
 import { Event } from '@prisma/client';
 
 export class EventEntity implements Event {
@@ -9,4 +10,6 @@ export class EventEntity implements Event {
   end_date: Date | null;
   created_at: Date;
   updated_at: Date;
+
+  addresses?: AddressEntity[];
 }
