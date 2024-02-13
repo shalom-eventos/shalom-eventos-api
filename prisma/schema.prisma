@@ -41,7 +41,7 @@ model Participant {
   documentType             String   @map("document_type")
   guardianName             String?  @map("guardian_name")
   guardianPhoneNumber      String?  @map("guardian_phone_number")
-  prayer_group             String?  @map("prayer_group")
+  prayerGroup              String?  @map("prayer_group")
   communityType            String?  @map("community_type")
   pcdDescription           String?  @map("pcd_description")
   allergyDescription       String?  @map("allergy_description")
