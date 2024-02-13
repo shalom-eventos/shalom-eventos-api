@@ -4,6 +4,7 @@ import { di } from '@/shared/lib/diContainer';
 
 interface Request {
   eventId: string;
+  type?: string;
 }
 
 interface Response {
@@ -17,9 +18,10 @@ export class ListRegistrationsByEventUseCase {
     )
   ) {}
 
-  async execute({ eventId }: Request): Promise<Response> {
+  async execute({ eventId, type }: Request): Promise<Response> {
     const registrations = await this.registrationsRepository.findManyByEvent(
-      eventId
+      eventId,
+      { type }
     );
 
     return { registrations };

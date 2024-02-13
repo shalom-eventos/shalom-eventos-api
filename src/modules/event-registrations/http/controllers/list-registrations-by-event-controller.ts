@@ -9,15 +9,17 @@ export async function listRegistrationsByEventController(
   const querySchema = z
     .object({
       eventId: z.string().uuid(),
+      type: z.enum(['SERVO', 'PARTICIPANTE']).nullish(),
     })
     .strict();
 
-  const { eventId } = querySchema.parse(request.query);
+  const { eventId, type } = querySchema.parse(request.query);
 
   const listRegistrationsByEvent = new ListRegistrationsByEventUseCase();
 
   const { registrations } = await listRegistrationsByEvent.execute({
     eventId,
+    type: type ? String(type) : undefined,
   });
 
   return reply.status(200).send({ registrations });

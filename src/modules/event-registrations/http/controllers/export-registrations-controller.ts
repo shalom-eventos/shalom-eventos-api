@@ -12,15 +12,19 @@ export async function exportRegistrationsController(
 ) {
   const querySchema = z
     .object({
+      type: z.enum(['SERVO', 'PARTICIPANTE']).nullish(),
       eventId: z.string().uuid(),
     })
     .strict();
 
-  const { eventId } = querySchema.parse(request.query);
+  const { eventId, type } = querySchema.parse(request.query);
 
   try {
     const listRegistrations = new ListRegistrationsByEventUseCase();
-    const { registrations } = await listRegistrations.execute({ eventId });
+    const { registrations } = await listRegistrations.execute({
+      eventId,
+      type: type ? String(type) : undefined,
+    });
 
     // Create a workbook and add a worksheet
     const wb = XLSX.utils.book_new();

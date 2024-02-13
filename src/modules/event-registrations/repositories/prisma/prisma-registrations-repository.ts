@@ -2,6 +2,7 @@ import { prisma } from '@/shared/lib/prisma';
 import { Prisma, EventRegistration } from '@prisma/client';
 
 import { RegistrationsRepository } from './../registrations-repository';
+import { FilterRegistrationsDto } from '../../dtos/filter-registrations-dto';
 
 export class PrismaRegistrationsRepository implements RegistrationsRepository {
   async create(data: Prisma.EventRegistrationUncheckedCreateInput) {
@@ -46,9 +47,10 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
     return registration;
   }
 
-  async findManyByEvent(eventId: string) {
+  async findManyByEvent(eventId: string, filter?: FilterRegistrationsDto) {
+    const type = filter?.type;
     const registrations = await prisma.eventRegistration.findMany({
-      where: { eventId },
+      where: { eventId, type },
       include: {
         participant: {
           include: {
