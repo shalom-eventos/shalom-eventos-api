@@ -6,6 +6,7 @@ import { multer } from '@/shared/lib/multer';
 
 import { createPaymentController } from '../controllers/create-payment-controller';
 import { updatePaymentStatusController } from '../controllers/update-payment-status-controller';
+import { deletePaymentController } from '../controllers/delete-payment-controller';
 
 export async function paymentsRoutes(app: FastifyInstance) {
   const participantMiddlewares = {
@@ -17,6 +18,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
   };
 
   app.post('/payments', participantMiddlewares, createPaymentController);
+  app.delete('/payments/:id', adminMiddlewares, deletePaymentController);
   app.patch(
     '/payments/:id/update-status',
     adminMiddlewares,

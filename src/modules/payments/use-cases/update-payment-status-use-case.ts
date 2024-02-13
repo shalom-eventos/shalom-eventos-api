@@ -15,7 +15,7 @@ export class UpdatePaymentStatusUseCase {
   constructor(private paymentsRepository: PaymentsRepository) {}
 
   async execute({ paymentId }: Request): Promise<Response> {
-    const payment = await this.paymentsRepository.findById(paymentId);
+    const payment = await this.paymentsRepository.findOneById(paymentId);
     if (!payment) throw new RegistrationNotFoundError();
 
     if (payment.status === 'approved') {

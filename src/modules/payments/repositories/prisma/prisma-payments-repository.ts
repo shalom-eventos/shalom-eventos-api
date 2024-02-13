@@ -4,9 +4,17 @@ import { Prisma, Payment } from '@prisma/client';
 import { PaymentsRepository } from './../payments-repository';
 
 export class PrismaPaymentsRepository implements PaymentsRepository {
-  async findById(id: string) {
+  async findOneById(id: string) {
     const payment = await prisma.payment.findUnique({
       where: { id },
+    });
+
+    return payment;
+  }
+
+  async findOneByRegistrationId(eventRegistrationId: string) {
+    const payment = await prisma.payment.findUnique({
+      where: { eventRegistrationId },
     });
 
     return payment;
