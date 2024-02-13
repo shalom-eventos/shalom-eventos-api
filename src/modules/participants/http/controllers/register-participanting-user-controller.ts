@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
 import { RegisterParticipantingUserAndAddressUseCase } from '../../use-cases/register-participanting-user-and-address-use-case';
+import { deleteFile } from '@/shared/utils/delete-file';
 
 export async function registerParticipantingUserController(
   request: FastifyRequest,
@@ -57,10 +58,15 @@ export async function registerParticipantingUserController(
   const registerParticipantingUser =
     new RegisterParticipantingUserAndAddressUseCase();
 
-  const { participant } = await registerParticipantingUser.execute({
-    ...bodySchema.parse(request.body),
-    file: String(file.filename),
-  });
+  try {
+    const { participant } = await registerParticipantingUser.execute({
+      ...bodySchema.parse(request.body),
+      file: String(file.filename),
+    });
 
-  return reply.status(200).send({ participant });
+    return reply.status(200).send({ participant });
+  } catch (err) {
+    if (file.filename) if (file.filename) deleteFile(file.filename);
+    throw err;
+  }
 }
