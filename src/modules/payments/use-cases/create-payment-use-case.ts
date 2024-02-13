@@ -5,15 +5,15 @@ import { PaymentsRepository } from '../repositories/payments-repository';
 import { RegistrationsRepository } from '@/modules/event-registrations/repositories/registrations-repository';
 import { RegistrationNotFoundError, TicketNotFoundError } from './errors';
 
-interface IRequest {
-  user_id: string;
-  event_registration_id: string;
-  payment_method: string;
+interface Request {
+  userId: string;
+  eventRegistrationId: string;
+  paymentMethod: string;
   price: number;
   file: string;
 }
 
-interface IResponse {
+interface Response {
   payment: Payment;
 }
 
@@ -25,27 +25,27 @@ export class CreatePaymentUseCase {
   ) {}
 
   async execute({
-    user_id,
-    event_registration_id,
-    payment_method,
+    userId,
+    eventRegistrationId,
+    paymentMethod,
     price,
     file,
-  }: IRequest): Promise<IResponse> {
+  }: Request): Promise<Response> {
     const registration = await this.registrationsRepository.findOneByIdAndUser(
-      event_registration_id,
-      user_id
+      eventRegistrationId,
+      userId
     );
     if (!registration) throw new RegistrationNotFoundError();
 
     const ticket = await this.ticketsRepository.findFirstNotExpiredByEvent(
-      registration.event_id
+      registration.eventId
     );
     if (!ticket) throw new TicketNotFoundError();
 
     const payment = await this.paymentsRepository.create({
-      event_registration_id,
-      event_ticket_id: ticket.id,
-      payment_method,
+      eventRegistrationId,
+      eventTicketId: ticket.id,
+      paymentMethod,
       price: new Prisma.Decimal(price),
       file,
       status: 'sent',

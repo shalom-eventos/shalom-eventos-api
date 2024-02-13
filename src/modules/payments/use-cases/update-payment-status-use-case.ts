@@ -3,19 +3,19 @@ import { Payment } from '@prisma/client';
 import { RegistrationNotFoundError } from './errors';
 import { PaymentsRepository } from '../repositories/payments-repository';
 
-interface IRequest {
-  payment_id: string;
+interface Request {
+  paymentId: string;
 }
 
-interface IResponse {
+interface Response {
   payment: Payment;
 }
 
 export class UpdatePaymentStatusUseCase {
   constructor(private paymentsRepository: PaymentsRepository) {}
 
-  async execute({ payment_id }: IRequest): Promise<IResponse> {
-    const payment = await this.paymentsRepository.findById(payment_id);
+  async execute({ paymentId }: Request): Promise<Response> {
+    const payment = await this.paymentsRepository.findById(paymentId);
     if (!payment) throw new RegistrationNotFoundError();
 
     if (payment.status === 'approved') {

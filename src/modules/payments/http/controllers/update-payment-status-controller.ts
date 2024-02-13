@@ -16,7 +16,7 @@ export async function updatePaymentStatusController(
   const { id } = paramsSchema.parse(request.params);
 
   const updatePayment = makeUpdatePaymentStatusUseCase();
-  const { payment } = await updatePayment.execute({ payment_id: id });
+  const { payment } = await updatePayment.execute({ paymentId: id });
 
   return reply.status(200).send({ payment });
 }

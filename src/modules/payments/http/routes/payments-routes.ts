@@ -16,11 +16,7 @@ export async function paymentsRoutes(app: FastifyInstance) {
     onRequest: [verifyJWT, verifyUserRole('ADMINISTRATOR')],
   };
 
-  app.post(
-    '/payments/registration/:event_registration_id',
-    participantMiddlewares,
-    createPaymentController
-  );
+  app.post('/payments', participantMiddlewares, createPaymentController);
   app.patch(
     '/payments/:id/update-status',
     adminMiddlewares,

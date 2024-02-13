@@ -9,15 +9,10 @@ export async function createPaymentController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const paramsSchema = z
-    .object({
-      event_registration_id: z.string().uuid(),
-    })
-    .strict();
-
   const bodySchema = z
     .object({
-      payment_method: z.enum([
+      eventRegistrationId: z.string().uuid(),
+      paymentMethod: z.enum([
         'PIX',
         'DINHEIRO',
         'CARTÃO DE DÉBITO',
@@ -31,17 +26,18 @@ export async function createPaymentController(
   //   file: z.instanceof(File),
   // });
 
-  const user_id = request.user.sub;
+  const userId = request.user.sub;
   const file = request.file;
-  const { event_registration_id } = paramsSchema.parse(request.params);
-  const { payment_method, price } = bodySchema.parse(request.body);
+  const { eventRegistrationId, paymentMethod, price } = bodySchema.parse(
+    request.body
+  );
 
   const createPayment = makeCreatePaymentUseCase();
 
   const { payment } = await createPayment.execute({
-    user_id,
-    event_registration_id,
-    payment_method,
+    userId,
+    eventRegistrationId,
+    paymentMethod,
     price,
     file: String(file.filename),
   });
