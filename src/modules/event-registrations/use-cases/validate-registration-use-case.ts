@@ -19,11 +19,9 @@ export class ValidateRegistrationUseCase {
     )
   ) {}
 
-  async execute({
-    registrationId: registration_id,
-  }: Request): Promise<Response> {
+  async execute({ registrationId }: Request): Promise<Response> {
     const registration = await this.registrationsRepository.findOneById(
-      registration_id
+      registrationId
     );
     if (!registration) throw new ResourceNotFoundError('Registration');
 
