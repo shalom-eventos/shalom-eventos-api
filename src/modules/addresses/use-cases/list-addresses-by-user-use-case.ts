@@ -11,7 +11,7 @@ interface Response {
   addresses: Address[];
 }
 
-export class ListAddressesByParticipantUseCase {
+export class ListAddressesByUserUseCase {
   constructor(
     private addressesRepository: AddressesRepository = di.resolve(
       'addressesRepository'

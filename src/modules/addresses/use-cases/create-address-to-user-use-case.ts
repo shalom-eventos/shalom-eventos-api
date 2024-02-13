@@ -21,7 +21,7 @@ interface Response {
   address: Address;
 }
 
-export class CreateAddressToParticipantUseCase {
+export class CreateAddressToUserUseCase {
   constructor(
     private addressesRepository: AddressesRepository = di.resolve(
       'addressesRepository'
@@ -39,16 +39,13 @@ export class CreateAddressToParticipantUseCase {
     city,
     state,
   }: Request): Promise<Response> {
-    const userParticipant = await this.usersRepository.findByIdWithRelations(
-      userId
-    );
+    const user = await this.usersRepository.findByIdWithRelations(userId);
 
-    if (!userParticipant) throw new ResourceNotFoundError('User');
+    if (!user) throw new ResourceNotFoundError('User');
 
-    if (userParticipant.role !== 'PARTICIPANT')
-      throw new UserIsNotParticipantError();
+    if (user.role !== 'PARTICIPANT') throw new UserIsNotParticipantError();
 
-    if (userParticipant?.addresses && userParticipant.addresses.length > 0)
+    if (user?.addresses && user.addresses.length > 0)
       throw new AlreadyHasAddressError();
 
     const address = await this.addressesRepository.create({
@@ -61,7 +58,7 @@ export class CreateAddressToParticipantUseCase {
       state,
       users: {
         connect: {
-          id: userParticipant.id,
+          id: user.id,
         },
       },
     });

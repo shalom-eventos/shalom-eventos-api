@@ -1,9 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 
-import { UpdateAddressToParticipantUseCase } from '../../use-cases/update-address-to-participant-use-case';
+import { UpdateAddressToUserUseCase } from '../../use-cases/update-address-to-user-use-case';
 
-export async function updateAddressToParticipantController(
+export async function updateAddressToUserController(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
@@ -32,7 +32,7 @@ export async function updateAddressToParticipantController(
   const { street, streetNumber, complement, zipCode, district, city, state } =
     bodySchema.parse(request.body);
 
-  const updateAddress = new UpdateAddressToParticipantUseCase();
+  const updateAddress = new UpdateAddressToUserUseCase();
   const { address } = await updateAddress.execute({
     addressId: id,
     userId,

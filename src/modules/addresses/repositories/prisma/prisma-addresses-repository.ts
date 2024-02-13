@@ -53,6 +53,14 @@ export class PrismaAddressesRepository implements AddressesRepository {
     return address;
   }
 
+  async findManyByParticipant(participantId: string) {
+    const address = await prisma.address.findMany({
+      where: { participants: { some: { id: participantId } } },
+    });
+
+    return address;
+  }
+
   async delete(id: string) {
     await prisma.address.delete({ where: { id } });
   }

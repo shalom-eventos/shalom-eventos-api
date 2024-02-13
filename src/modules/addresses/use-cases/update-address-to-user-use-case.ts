@@ -22,7 +22,7 @@ interface Response {
   address: Address;
 }
 
-export class UpdateAddressToParticipantUseCase {
+export class UpdateAddressToUserUseCase {
   constructor(
     private addressesRepository: AddressesRepository = di.resolve(
       'addressesRepository'

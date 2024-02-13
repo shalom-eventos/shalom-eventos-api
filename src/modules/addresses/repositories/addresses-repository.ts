@@ -7,5 +7,6 @@ export interface AddressesRepository {
   findByEvent(addressId: string, eventId: string): Promise<Address | null>;
   findManyByUser(userId: string): Promise<Address[]>;
   findManyByEvent(eventId: string): Promise<Address[]>;
+  findManyByParticipant(participantId: string): Promise<Address[]>;
   delete(id: string): Promise<void>;
 }
