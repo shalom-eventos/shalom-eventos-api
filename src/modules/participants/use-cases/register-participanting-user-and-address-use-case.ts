@@ -125,7 +125,10 @@ export class RegisterParticipantingUserAndAddressUseCase {
       if (!event) throw new ResourceNotFoundError('Event');
 
       const emailAlreadyRegisteredForThisEvent =
-        await this.registrationsRepository.findOneByParticipantEmail(email);
+        await this.registrationsRepository.findOneByParticipantEmailAndEvent(
+          email,
+          eventId
+        );
       if (emailAlreadyRegisteredForThisEvent)
         throw new AppError('Email already registered for this event', 409);
 

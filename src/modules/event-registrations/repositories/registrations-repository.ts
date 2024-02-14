@@ -22,6 +22,9 @@ export interface RegistrationsRepository {
     filter?: FilterRegistrationsDto
   ): Promise<FindManyByEventResponseDto[]>;
   findManyByUser(userId: string): Promise<FindManyByUserResponseDto[]>;
-  findOneByParticipantEmail(email: string): Promise<EventRegistration | null>;
+  findOneByParticipantEmailAndEvent(
+    email: string,
+    eventId: string
+  ): Promise<EventRegistration | null>;
   delete(id: string): Promise<void>;
 }

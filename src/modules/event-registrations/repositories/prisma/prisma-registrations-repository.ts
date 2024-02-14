@@ -91,9 +91,9 @@ export class PrismaRegistrationsRepository implements RegistrationsRepository {
     return registrations;
   }
 
-  async findOneByParticipantEmail(email: string) {
+  async findOneByParticipantEmailAndEvent(email: string, eventId: string) {
     const registration = await prisma.eventRegistration.findFirst({
-      where: { participant: { email } },
+      where: { eventId, participant: { email } },
     });
 
     return registration;
