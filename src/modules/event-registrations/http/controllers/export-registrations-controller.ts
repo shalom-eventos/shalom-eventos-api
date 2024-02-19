@@ -104,7 +104,7 @@ export async function exportRegistrationsController(
         `https://api.shalomsobral.com.br/files/${registration.payment?.file}`,
         registration.transportationMode,
         registration.payment?.paymentMethod,
-        registration.payment?.price,
+        String(registration.payment?.price),
         '1º Lote', //registration.payment?.eventTicketId,
         translatePaymentStatus(registration.payment?.status),
       ];
