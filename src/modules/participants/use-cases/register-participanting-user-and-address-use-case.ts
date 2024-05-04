@@ -216,6 +216,7 @@ export class RegisterParticipantingUserAndAddressUseCase {
 
       return { participant };
     } catch (err) {
+      console.log('err', err);
       if (registration) this.registrationsRepository.delete(registration.id);
       if (participant) this.participantsRepository.delete(participant.id);
       if (address) this.addressesRepository.delete(address.id);
