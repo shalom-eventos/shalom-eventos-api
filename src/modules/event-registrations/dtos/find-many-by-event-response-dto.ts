@@ -4,10 +4,15 @@ import {
   Participant,
   Event,
   Address,
+  EventTicket,
 } from '@prisma/client';
 
 export type FindManyByEventResponseDto = EventRegistration & {
-  payment: Payment | null;
+  payment:
+    | null
+    | (Payment & {
+        tickets: EventTicket;
+      });
   participant: Participant & {
     addresses: Address[];
     user: {

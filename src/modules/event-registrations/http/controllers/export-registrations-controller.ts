@@ -106,6 +106,7 @@ export async function exportRegistrationsController(
         registration.payment?.paymentMethod,
         String(registration.payment?.price),
         '1º Lote', //registration.payment?.eventTicketId,
+        registration.payment?.tickets?.title ?? ' Lote X',
         translatePaymentStatus(registration.payment?.status),
       ];
 
