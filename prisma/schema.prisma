@@ -102,6 +102,7 @@ model EventTicket {
   externalPaymentUrl String?   @map("external_payment_url")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
 
   event    Event     @relation(fields: [eventId], references: [id])
   payments Payment[]
