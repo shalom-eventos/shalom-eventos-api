@@ -5,6 +5,7 @@ export interface TicketsRepository {
   findManyByEvent(event_id: string): Promise<EventTicket[]>;
   create(data: Prisma.EventTicketUncheckedCreateInput): Promise<EventTicket>;
   save(data: EventTicket): Promise<EventTicket>;
+  delete(id: string): Promise<void>;
   findByIdIfEventNotExpired(id: string): Promise<EventTicket | null>;
   findFirstNotExpiredByEvent(event_id: string): Promise<EventTicket | null>;
 }

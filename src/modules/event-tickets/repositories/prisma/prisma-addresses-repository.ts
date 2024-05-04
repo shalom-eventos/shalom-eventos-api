@@ -35,6 +35,11 @@ export class PrismaTicketsRepository implements TicketsRepository {
         eventId,
         expiresAt: { gt: new Date() },
       },
+      orderBy: {
+        startsAt: 'asc',
+        expiresAt: 'asc',
+        createdAt: 'asc',
+      },
     });
 
     return ticket;
@@ -64,5 +69,10 @@ export class PrismaTicketsRepository implements TicketsRepository {
     });
 
     return ticket;
+  }
+
+  async delete(id: string) {
+    await prisma.eventTicket.delete({ where: { id } });
+    return;
   }
 }
