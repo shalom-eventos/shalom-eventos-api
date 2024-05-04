@@ -37,8 +37,8 @@ export class PrismaTicketsRepository implements TicketsRepository {
       },
       orderBy: {
         startsAt: 'asc',
-        expiresAt: 'asc',
-        createdAt: 'asc',
+        // expiresAt: 'asc',
+        // createdAt: 'asc',
       },
     });
 
