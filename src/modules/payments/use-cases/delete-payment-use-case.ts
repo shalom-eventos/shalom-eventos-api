@@ -27,10 +27,10 @@ export class DeletePaymentUseCase {
       );
     }
 
-    if (!payment) throw new PaymentNotFoundError();
-    if (payment.file) await deleteFile(payment.file);
-
-    await this.paymentsRepository.delete(payment.id);
+    if (payment) {
+      if (payment.file) await deleteFile(payment.file);
+      await this.paymentsRepository.delete(payment.id);
+    }
 
     return;
   }
